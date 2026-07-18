@@ -1,6 +1,6 @@
 class ApiConstants {
   // Replace with your live Render backend URL after deployment (e.g. "https://aazhix-backend.onrender.com")
-  static const String baseUrl = "https://YOUR-RENDER-APP-NAME.onrender.com";
+  static const String baseUrl = "https://aazhix.onrender.com";
 
   static const weather = "$baseUrl/weather";
   static const fishZone = "$baseUrl/api/fishzone";

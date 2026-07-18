@@ -1,0 +1,19 @@
+# Backend gitignore
+backend/__pycache__/
+backend/*.py[cod]
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/frame.jpg
+backend/venv/
+
+# Flutter / Frontend gitignore
+frontend/.dart_tool/
+frontend/build/
+frontend/.idea/
+frontend/*.iml
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+
+# General
+.DS_Store
+*.log

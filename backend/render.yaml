@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: aazhix-backend
+    env: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: ROBOFLOW_API_KEY
+        sync: false

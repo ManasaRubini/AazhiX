@@ -1,47 +1,49 @@
 from fastapi import APIRouter
-import random
+from datetime import datetime, timezone
 
 router = APIRouter()
 
 FISH_DB = [
-    {"fish": "Tuna", "base_price": 220},
-    {"fish": "Sardine", "base_price": 100},
-    {"fish": "Mackerel", "base_price": 140},
-    {"fish": "Pomfret", "base_price": 300},
-    {"fish": "Anchovy", "base_price": 80},
-    {"fish": "Salmon", "base_price": 450},
+    {"fish": "Tuna", "base_price": 240},
+    {"fish": "Sardine", "base_price": 110},
+    {"fish": "Mackerel", "base_price": 150},
+    {"fish": "Pomfret", "base_price": 320},
+    {"fish": "Anchovy", "base_price": 90},
+    {"fish": "Salmon", "base_price": 480},
 ]
 
-def calculate_demand(price):
-    if price >= 350:
+def calculate_demand(price, base_price):
+    ratio = price / base_price
+    if ratio >= 1.08:
         return "high"
-    elif price >= 150:
+    elif ratio >= 0.95:
         return "medium"
     else:
         return "low"
-def get_recommendation(price, demand):
-    """
-    Smart selling recommendation logic
-    """
 
-    if demand == "high" and price > 200:
+def get_recommendation(price, demand):
+    if demand == "high":
         return "SELL TODAY"
-    
     elif demand == "medium":
         return "WAIT 1 DAY"
-    
     else:
         return "DO NOT SELL"
 
 @router.get("/market-prices")
 def get_market_prices():
     result = []
+    now = datetime.now(timezone.utc)
+    hour = now.hour
+    day = now.weekday()
 
-    for fish in FISH_DB:
-        fluctuation = random.uniform(0.8, 1.2)
-        price = round(fish["base_price"] * fluctuation, 2)
+    # Real-time daily market cycle modifier (morning fresh-catch peak & weekend factor)
+    time_factor = 1.0 + (0.08 if 4 <= hour <= 12 else -0.04) + (0.05 if day >= 5 else 0.0)
 
-        demand = calculate_demand(price)
+    for idx, fish in enumerate(FISH_DB):
+        fish_modifier = ((hour * 7 + idx * 13) % 17 - 8) / 100.0
+        price = round(fish["base_price"] * (time_factor + fish_modifier), 2)
+
+        demand = calculate_demand(price, fish["base_price"])
         recommendation = get_recommendation(price, demand)
 
         result.append({

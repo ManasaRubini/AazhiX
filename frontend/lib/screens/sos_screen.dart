@@ -20,7 +20,6 @@ class _SosScreenState extends State<SosScreen> {
   final FlutterTts tts = FlutterTts();
   final SpeechToText speech = SpeechToText();
 
-  // 🎤 NEW: noise detector
   NoiseMeter? _noiseMeter;
   StreamSubscription<NoiseReading>? _noiseSub;
 
@@ -45,23 +44,20 @@ class _SosScreenState extends State<SosScreen> {
     await speech.initialize();
   }
 
-  // 🚨 MANUAL SOS (your existing logic)
   Future<void> triggerSOS() async {
     try {
       setState(() {
         status = "Fetching Location...";
       });
 
-      Position position =
-          await Geolocator.getCurrentPosition(
+      Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
       latitude = position.latitude;
       longitude = position.longitude;
 
-      final result =
-          await SosService().triggerSOS(
+      final result = await SosService().triggerSOS(
         latitude,
         longitude,
       );
@@ -79,7 +75,6 @@ class _SosScreenState extends State<SosScreen> {
     }
   }
 
-  // 🎤 VOICE COMMAND SOS
   Future<void> startVoiceSOS() async {
     setState(() {
       listening = true;
@@ -98,7 +93,6 @@ class _SosScreenState extends State<SosScreen> {
     );
   }
 
-  // 🚨 NEW: SCREAM DETECTION (AUTO SOS)
   Future<void> startScreamDetection() async {
     await Permission.microphone.request();
 
@@ -108,9 +102,6 @@ class _SosScreenState extends State<SosScreen> {
     _noiseSub = _noiseMeter!.noise.listen((NoiseReading reading) async {
       double db = reading.meanDecibel;
 
-      print("Noise level: $db");
-
-      // 🔥 threshold for scream
       if (db > 85) {
         await autoSOS();
       }
@@ -121,17 +112,13 @@ class _SosScreenState extends State<SosScreen> {
     });
   }
 
-  // 🚨 AUTO SOS (NO BUTTON PRESS)
   Future<void> autoSOS() async {
-
-    // cooldown
     if (DateTime.now().difference(lastTrigger).inSeconds < 30) return;
 
     lastTrigger = DateTime.now();
 
     try {
-      Position position =
-          await Geolocator.getCurrentPosition(
+      Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
@@ -153,328 +140,292 @@ class _SosScreenState extends State<SosScreen> {
     }
   }
 
-  Widget infoCard(String title, String value, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xff122645),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget infoRow(String title, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white70,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.cyanAccent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xff041B43),
+      body: Stack(
         children: [
-          Text(title, style: const TextStyle(color: Colors.white70)),
-          Text(value,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-              )),
+
+          /// Background
+          Positioned.fill(
+            child: Image.asset(
+              "assets/sea_bg.png",
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(.55),
+            ),
+          ),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+
+                  /// Header
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.sos,
+                        color: Colors.redAccent,
+                        size: 35,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        "Emergency SOS",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  /// SOS BUTTON
+                  GestureDetector(
+                    onTap: triggerSOS,
+                    child: Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const RadialGradient(
+                          colors: [
+                            Colors.redAccent,
+                            Colors.red,
+                            Color(0xff8B0000),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(.8),
+                            blurRadius: 40,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          "SOS",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 55,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  /// STATUS CARD
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.08),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: Colors.white24,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.shield,
+                          color: Colors.cyanAccent,
+                          size: 40,
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "Emergency Status",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          status,
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// Voice SOS
+                  Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.orange.withOpacity(.4),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.mic,
+                          color: Colors.orange,
+                        ),
+                        title: const Text(
+                          "Voice SOS",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          listening
+                              ? "Listening..."
+                              : "Say HELP, SOS or EMERGENCY",
+                          style: const TextStyle(
+                            color: Colors.white70,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                        ),
+                        onTap: startVoiceSOS,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  /// Scream Detection
+                  Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.withOpacity(.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.deepPurple.withOpacity(.4),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.hearing,
+                          color: Colors.deepPurpleAccent,
+                        ),
+                        title: const Text(
+                          "Scream Detection",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          screamDetectionActive
+                              ? "Monitoring microphone..."
+                              : "Auto SOS when scream detected",
+                          style: const TextStyle(
+                            color: Colors.white70,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                        ),
+                        onTap: startScreamDetection,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// LOCATION CARD
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.08),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: Colors.white24,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: Colors.cyanAccent,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "Current Location",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
+                        infoRow(
+                          "Latitude",
+                          latitude.toStringAsFixed(5),
+                        ),
+                        const SizedBox(height: 10),
+                        infoRow(
+                          "Longitude",
+                          longitude.toStringAsFixed(5),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
-  Widget infoRow(
-  String title,
-  String value,
-) {
-  return Row(
-    mainAxisAlignment:
-        MainAxisAlignment.spaceBetween,
-    children: [
-
-      Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white70,
-        ),
-      ),
-
-      Text(
-        value,
-        style: const TextStyle(
-          color: Colors.cyanAccent,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ],
-  );
-}
-
-  @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: const Color(0xff041B43),
-
-    body: Stack(
-      children: [
-
-        /// Background
-        Positioned.fill(
-          child: Image.asset(
-            "assets/sea_bg.png",
-            fit: BoxFit.cover,
-          ),
-        ),
-
-        Positioned.fill(
-          child: Container(
-            color: Colors.black.withOpacity(.55),
-          ),
-        ),
-
-        SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-
-                /// Header
-                Row(
-                  children: const [
-                    Icon(
-                      Icons.sos,
-                      color: Colors.redAccent,
-                      size: 35,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      "Emergency SOS",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 30),
-
-                /// SOS BUTTON
-                GestureDetector(
-                  onTap: triggerSOS,
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-
-                      gradient: const RadialGradient(
-                        colors: [
-                          Colors.redAccent,
-                          Colors.red,
-                          Color(0xff8B0000),
-                        ],
-                      ),
-
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withOpacity(.8),
-                          blurRadius: 40,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-
-                    child: const Center(
-                      child: Text(
-                        "SOS",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 55,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                /// STATUS CARD
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.08),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: Colors.white24,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-
-                      const Icon(
-                        Icons.shield,
-                        color: Colors.cyanAccent,
-                        size: 40,
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      const Text(
-                        "Emergency Status",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Text(
-                        status,
-                        style: const TextStyle(
-                          color: Colors.greenAccent,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// Voice SOS
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.orange.withOpacity(.4),
-                    ),
-                  ),
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.mic,
-                      color: Colors.orange,
-                    ),
-                    title: const Text(
-                      "Voice SOS",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      listening
-                          ? "Listening..."
-                          : "Say HELP, SOS or EMERGENCY",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                    ),
-                    onTap: startVoiceSOS,
-                  ),
-                ),
-
-                const SizedBox(height: 15),
-
-                /// Scream Detection
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple.withOpacity(.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.deepPurple.withOpacity(.4),
-                    ),
-                  ),
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.hearing,
-                      color: Colors.deepPurpleAccent,
-                    ),
-                    title: const Text(
-                      "Scream Detection",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      screamDetectionActive
-                          ? "Monitoring microphone..."
-                          : "Auto SOS when scream detected",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                    ),
-                    onTap: startScreamDetection,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// LOCATION CARD
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.08),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: Colors.white24,
-                    ),
-                  ),
-
-                  child: Column(
-                    children: [
-
-                      Row(
-                        children: const [
-                          Icon(
-                            Icons.location_on,
-                            color: Colors.cyanAccent,
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            "Current Location",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 15),
-
-                      infoRow(
-                        "Latitude",
-                        latitude.toStringAsFixed(5),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      infoRow(
-                        "Longitude",
-                        longitude.toStringAsFixed(5),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
 
   @override
   void dispose() {

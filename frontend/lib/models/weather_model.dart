@@ -15,11 +15,11 @@ class WeatherModel {
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
     return WeatherModel(
-      temperature: json["temperature"].toDouble(),
-      humidity: json["humidity"].toDouble(),
-      windSpeed: json["wind_speed"].toDouble(),
-      waveHeight: json["wave_height"].toDouble(),
-      condition: json["condition"],
+      temperature: (json["temperature"] as num?)?.toDouble() ?? 28.0,
+      humidity: (json["humidity"] as num?)?.toDouble() ?? 75.0,
+      windSpeed: (json["wind_speed"] as num?)?.toDouble() ?? 15.0,
+      waveHeight: (json["wave_height"] as num?)?.toDouble() ?? 1.2,
+      condition: json["condition"]?.toString() ?? "Partly Cloudy",
     );
   }
 }

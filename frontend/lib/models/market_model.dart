@@ -13,10 +13,10 @@ class MarketModel {
 
   factory MarketModel.fromJson(Map<String, dynamic> json) {
     return MarketModel(
-      fish: json["fish"],
-      price: (json["price"] as num).toDouble(),
-      demand: json["demand"],
-      recommendation: json["recommendation"],
+      fish: json["fish"]?.toString() ?? "Fish",
+      price: (json["price"] as num?)?.toDouble() ?? 150.0,
+      demand: json["demand"]?.toString() ?? "medium",
+      recommendation: json["recommendation"]?.toString() ?? "WAIT 1 DAY",
     );
   }
 }

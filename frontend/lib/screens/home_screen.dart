@@ -1,18 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/weather_model.dart';
+import '../services/weather_service.dart';
 import 'weather_screen.dart';
 import 'marine_doctor_screen.dart';
 import 'fuel_screen.dart';
 import 'plastic_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String captainName = "Captain";
+  WeatherModel? liveWeather;
+  bool loadingWeather = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    _loadLiveWeather();
+  }
+
+  Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String name = prefs.getString("name") ?? "";
+    if (name.isNotEmpty) {
+      setState(() {
+        captainName = name;
+      });
+    }
+  }
+
+  Future<void> _loadLiveWeather() async {
+    try {
+      final data = await WeatherService().getWeather();
+      if (!mounted) return;
+      setState(() {
+        liveWeather = data;
+        loadingWeather = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        loadingWeather = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xff041B43),
-
       body: Stack(
         children: [
           /// Background Image
@@ -46,10 +90,8 @@ class HomeScreen extends StatelessWidget {
                             "assets/logo_icon.png",
                             height: 42,
                           ),
-
-                          SizedBox(width: 10),
-
-                          Text(
+                          const SizedBox(width: 10),
+                          const Text(
                             "AazhiX",
                             style: TextStyle(
                               color: Colors.white,
@@ -79,19 +121,19 @@ class HomeScreen extends StatelessWidget {
 
                   /// GREETING
                   const Text(
-                    "Good Morning",
+                    "Welcome back,",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 42,
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  const Text(
-                    "Captain 👋",
-                    style: TextStyle(
+                  Text(
+                    "$captainName 👋",
+                    style: const TextStyle(
                       color: Color(0xff4FC3FF),
-                      fontSize: 52,
+                      fontSize: 42,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -108,100 +150,114 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 25),
 
-                  /// WEATHER CARD
-                  Container(
-                    height: 230,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xff0A4FA8),
-                          Color(0xff43C0FF),
+                  /// DYNAMIC LIVE WEATHER CARD
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const WeatherScreen()),
+                      );
+                    },
+                    child: Container(
+                      height: 230,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xff0A4FA8),
+                            Color(0xff43C0FF),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.5),
+                            blurRadius: 20,
+                          )
                         ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withOpacity(0.5),
-                          blurRadius: 20,
-                        )
-                      ],
-                    ),
-
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          right: 15,
-                          bottom: 15,
-                          child: Icon(
-                            Icons.waves,
-                            size: 90,
-                            color: Colors.white.withOpacity(.25),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: 15,
+                            bottom: 15,
+                            child: Icon(
+                              Icons.waves,
+                              size: 90,
+                              color: Colors.white.withOpacity(.25),
+                            ),
                           ),
-                        ),
 
-                        const Padding(
-                          padding: EdgeInsets.all(22),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    color: Colors.white,
-                                  ),
-                                  SizedBox(width: 5),
-                                  Text(
-                                    "Chennai, India",
-                                    style: TextStyle(
+                          Padding(
+                            padding: const EdgeInsets.all(22),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
                                       color: Colors.white,
                                     ),
-                                  )
-                                ],
-                              ),
-
-                              SizedBox(height: 20),
-
-                              Text(
-                                "28°C",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 60,
-                                  fontWeight: FontWeight.bold,
+                                    SizedBox(width: 5),
+                                    Text(
+                                      "Live Ocean Weather",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  ],
                                 ),
-                              ),
 
-                              Text(
-                                "Partly Cloudy",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                ),
-                              ),
+                                const SizedBox(height: 15),
 
-                              SizedBox(height: 10),
-
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.waves,
-                                    color: Colors.white,
-                                  ),
-
-                                  SizedBox(width: 6),
-
-                                  Text(
-                                    "Moderate Waves",
-                                    style: TextStyle(
-                                      color: Colors.white,
+                                if (loadingWeather)
+                                  const Expanded(
+                                    child: Center(
+                                      child: CircularProgressIndicator(color: Colors.white),
                                     ),
                                   )
+                                else ...[
+                                  Text(
+                                    "${liveWeather?.temperature ?? 29.0}°C",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 55,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  Text(
+                                    liveWeather?.condition ?? "Partly Cloudy",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 10),
+
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.waves,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "Wave: ${liveWeather?.waveHeight ?? 1.4}m  •  Wind: ${liveWeather?.windSpeed ?? 18.0} km/h",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    ],
+                                  ),
                                 ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
 
@@ -220,13 +276,11 @@ class HomeScreen extends StatelessWidget {
 
                   GridView.count(
                     shrinkWrap: true,
-                    physics:
-                        const NeverScrollableScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 2,
                     mainAxisSpacing: 18,
                     crossAxisSpacing: 18,
                     childAspectRatio: .9,
-
                     children: [
                       featureCard(
                         context,
@@ -293,11 +347,9 @@ class HomeScreen extends StatelessWidget {
           ),
         );
       },
-
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -306,58 +358,46 @@ class HomeScreen extends StatelessWidget {
               color.withOpacity(.7),
             ],
           ),
-
           border: Border.all(
             color: Colors.white24,
           ),
         ),
-
         child: Stack(
           children: [
             Positioned(
               right: 15,
               bottom: 15,
               child: CircleAvatar(
-                backgroundColor:
-                    Colors.white.withOpacity(.2),
+                backgroundColor: Colors.white.withOpacity(.2),
                 child: const Icon(
                   Icons.arrow_forward,
                   color: Colors.white,
                 ),
               ),
             ),
-
             Center(
               child: Column(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor:
-                        Colors.black.withOpacity(.2),
-
+                    backgroundColor: Colors.black.withOpacity(.2),
                     child: Icon(
                       icon,
                       size: 45,
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Text(
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
                   ),
-
                   const SizedBox(height: 6),
-
                   Text(
                     subtitle,
                     style: const TextStyle(

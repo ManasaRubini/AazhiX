@@ -7,6 +7,7 @@ import 'market_screen.dart';
 import 'sos_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
+import '../widgets/captain_voice_widget.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -82,6 +83,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         index: currentIndex,
         children: pages,
       ),
+      floatingActionButton: const CaptainVoiceWidget(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         type: BottomNavigationBarType.fixed,

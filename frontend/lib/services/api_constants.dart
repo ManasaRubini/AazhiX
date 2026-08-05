@@ -9,4 +9,5 @@ class ApiConstants {
   static const plastic = "$baseUrl/plastic";
   static const engineAnalysis = "$baseUrl/marine-doctor";
   static const sos = "$baseUrl/api/sos/";
+  static const captainQuery = "$baseUrl/api/captain/query";
 }

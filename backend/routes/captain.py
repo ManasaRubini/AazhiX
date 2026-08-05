@@ -11,7 +11,8 @@ class CaptainQueryRequest(BaseModel):
     query: str
     latitude: float | None = None
     longitude: float | None = None
+    language: str = "en"
 
 @router.post("/query")
 def captain_voice_query(data: CaptainQueryRequest):
-    return process_query(data.query, data.latitude, data.longitude)
+    return process_query(data.query, data.latitude, data.longitude, data.language)

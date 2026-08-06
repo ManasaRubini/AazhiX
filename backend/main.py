@@ -10,6 +10,7 @@ from routes.market import router as market_router
 from routes.plastic import router as plastic_router
 from routes.sos import router as sos_router
 from routes.captain import router as captain_router
+from routes.notifications import router as notifications_router
 from routes import fuel
 
 # Ensure uploads directory exists for file processing
@@ -36,6 +37,7 @@ app.include_router(market_router)
 app.include_router(plastic_router)
 app.include_router(sos_router)
 app.include_router(captain_router)
+app.include_router(notifications_router)
 
 @app.get("/")
 def root():

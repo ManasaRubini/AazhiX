@@ -8,6 +8,7 @@ import 'sos_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
 import '../widgets/captain_voice_widget.dart';
+import '../services/app_language_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -17,6 +18,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
+  final AppLanguageProvider _langProvider = AppLanguageProvider();
   int currentIndex = 0;
 
   final List<Widget> pages = [
@@ -63,7 +65,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     int maxInactivityMs = 15 * 60 * 1000; // 15 minutes
 
     if (!isLoggedIn || (now - lastActiveTime) > maxInactivityMs) {
-      // Session expired due to >15 mins of inactivity -> Redirect to Login
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
@@ -71,58 +72,62 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         (route) => false,
       );
     } else {
-      // Still within 15 minutes: refresh activity timestamp
       await _updateActivityTimestamp();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
-        children: pages,
-      ),
-      floatingActionButton: const CaptainVoiceWidget(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xff0A1628),
-        selectedItemColor: Colors.cyan,
-        unselectedItemColor: Colors.white54,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-        ),
-        onTap: (index) {
-          _updateActivityTimestamp();
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
+    return AnimatedBuilder(
+      animation: _langProvider,
+      builder: (context, child) {
+        return Scaffold(
+          body: IndexedStack(
+            index: currentIndex,
+            children: pages,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-            label: "Fish Zone",
+          floatingActionButton: const CaptainVoiceWidget(),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: currentIndex,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: const Color(0xff0A1628),
+            selectedItemColor: Colors.cyan,
+            unselectedItemColor: Colors.white54,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+            onTap: (index) {
+              _updateActivityTimestamp();
+              setState(() {
+                currentIndex = index;
+              });
+            },
+            items: [
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.home),
+                label: _langProvider.getText("home"),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.location_on),
+                label: _langProvider.getText("fish_zone"),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.sos),
+                label: _langProvider.getText("sos"),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.bar_chart),
+                label: _langProvider.getText("market"),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.person),
+                label: _langProvider.getText("profile"),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sos),
-            label: "SOS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: "Market",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

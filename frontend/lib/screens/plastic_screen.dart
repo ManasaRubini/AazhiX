@@ -94,6 +94,16 @@ class _PlasticScreenState extends State<PlasticScreen> {
     }
   }
 
+  String translateObject(String objName) {
+    if (_langProvider.currentLanguage == "ta") {
+      if (objName.contains("Debris")) return "மிதக்கும் பிளாஸ்டிக் கழிவு (Debris)";
+      if (objName.contains("Bottle")) return "பிளாஸ்டிக் பாட்டில் (Plastic Bottle)";
+      if (objName.contains("Container")) return "பிளாஸ்டிக் பாத்திரம் (Container)";
+      if (objName.contains("Bag")) return "பிளாஸ்டிக் பைகள் (Plastic Bag)";
+    }
+    return objName;
+  }
+
   Widget resultCard(
     String title,
     String value,
@@ -101,8 +111,8 @@ class _PlasticScreenState extends State<PlasticScreen> {
     IconData icon,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(.12),
         borderRadius: BorderRadius.circular(20),
@@ -115,15 +125,15 @@ class _PlasticScreenState extends State<PlasticScreen> {
           Icon(
             icon,
             color: color,
-            size: 30,
+            size: 28,
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 15,
               ),
             ),
           ),
@@ -132,7 +142,7 @@ class _PlasticScreenState extends State<PlasticScreen> {
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 15,
             ),
           ),
         ],
@@ -164,32 +174,36 @@ class _PlasticScreenState extends State<PlasticScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// HEADER
+                    /// HEADER (WRAPPED IN EXPANDED TO PREVENT OVERFLOW BANNER)
                     Row(
                       children: [
                         const Icon(
                           Icons.recycling,
                           color: Colors.greenAccent,
-                          size: 35,
+                          size: 32,
                         ),
                         const SizedBox(width: 10),
-                        Text(
-                          _langProvider.getText("plastic_header"),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            _langProvider.getText("plastic_header"),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 20),
 
                     /// CAPTURE BUTTON
                     SizedBox(
                       width: double.infinity,
-                      height: 60,
+                      height: 56,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.greenAccent.shade700,
@@ -206,22 +220,22 @@ class _PlasticScreenState extends State<PlasticScreen> {
                           _langProvider.getText("scan_image"),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
                     /// IMAGE PREVIEW
                     if (image != null)
                       Container(
                         width: double.infinity,
-                        height: 200,
+                        height: 180,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
+                          borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(.3),
@@ -236,7 +250,7 @@ class _PlasticScreenState extends State<PlasticScreen> {
                         ),
                       ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
                     if (loading)
                       const Expanded(
@@ -281,22 +295,22 @@ class _PlasticScreenState extends State<PlasticScreen> {
                               Icons.waves,
                             ),
 
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
 
                             Text(
                               _langProvider.getText("detected_objects"),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
 
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 12),
 
                             if (detections.isEmpty)
                               Container(
-                                padding: const EdgeInsets.all(20),
+                                padding: const EdgeInsets.all(18),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(.08),
                                   borderRadius: BorderRadius.circular(20),
@@ -314,10 +328,11 @@ class _PlasticScreenState extends State<PlasticScreen> {
                                   num rawConf = item["confidence"] ?? 0.85;
                                   double confVal = rawConf.toDouble();
                                   double displayPercentage = confVal <= 1.0 ? confVal * 100 : confVal;
+                                  String rawObj = item["object"]?.toString() ?? "Object";
 
                                   return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.all(18),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(.12),
                                       borderRadius: BorderRadius.circular(20),
@@ -334,20 +349,20 @@ class _PlasticScreenState extends State<PlasticScreen> {
                                             color: Colors.white,
                                           ),
                                         ),
-                                        const SizedBox(width: 15),
+                                        const SizedBox(width: 14),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                item["object"]?.toString() ?? "Object",
+                                                translateObject(rawObj),
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 17,
+                                                  fontSize: 16,
                                                 ),
                                               ),
-                                              const SizedBox(height: 5),
+                                              const SizedBox(height: 4),
                                               Text(
                                                 "Confidence: ${displayPercentage.toStringAsFixed(1)}%",
                                                 style: const TextStyle(
@@ -374,7 +389,7 @@ class _PlasticScreenState extends State<PlasticScreen> {
                             children: const [
                               Icon(
                                 Icons.camera_alt,
-                                size: 90,
+                                size: 80,
                                 color: Colors.white54,
                               ),
                               SizedBox(height: 15),
@@ -383,7 +398,7 @@ class _PlasticScreenState extends State<PlasticScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 18,
+                                  fontSize: 17,
                                 ),
                               ),
                             ],

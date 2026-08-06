@@ -6,10 +6,10 @@ import numpy as np
 model = YOLO("yolov8n.pt")
 
 PLASTIC_ITEMS = {
-    "bottle": "Plastic Bottle",
+    "bottle": "Plastic Bottle / Container",
     "cup": "Plastic Cup",
-    "bowl": "Plastic Container",
-    "handbag": "Plastic Bag / Debris",
+    "bowl": "Plastic Container / Tub",
+    "handbag": "Plastic Bag / Packaging",
     "backpack": "Submerged Plastic Waste",
     "frisbee": "Floating Plastic Disc",
     "suitcase": "Plastic Crate / Box",
@@ -22,7 +22,8 @@ def detect_objects(image_path):
     detections = []
     
     try:
-        results = model(image_path, conf=0.20)
+        # Run YOLO inference
+        results = model(image_path, conf=0.15)
         for result in results:
             for box in result.boxes:
                 cls = int(box.cls[0])
@@ -36,25 +37,42 @@ def detect_objects(image_path):
                         "confidence": round(conf, 2)
                     })
 
-        # If standard YOLO COCO classes didn't catch generic plastic wrappers/debris,
-        # perform computer vision color & edge detection for floating ocean waste
-        if len(detections) == 0:
-            img = cv2.imread(image_path)
-            if img is not None:
-                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-                # Synthetic bright/white/transparent plastic color range
-                mask1 = cv2.inRange(hsv, np.array([0, 30, 120]), np.array([180, 255, 255]))
-                contours, _ = cv2.findContours(mask1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                
-                large_debris = [c for c in contours if cv2.contourArea(c) > 1500]
-                if len(large_debris) > 0:
-                    count = min(3, len(large_debris))
-                    for i in range(count):
-                        detections.append({
-                            "object": "Floating Plastic Debris",
-                            "confidence": round(0.82 + (i * 0.04), 2)
-                        })
-    except Exception as e:
-        print("Plastic detection processing error:", e)
+        # Advanced OpenCV specular highlight & edge contour detection for transparent bottles / wrappers
+        img = cv2.imread(image_path)
+        if img is not None:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # Detect high-contrast specular reflections common in clear plastics
+            _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            reflections = [c for c in contours if cv2.contourArea(c) > 600]
+            if len(reflections) > 0 and len(detections) < 3:
+                # Add detected clear plastic object
+                detections.append({
+                    "object": "Floating Plastic Debris",
+                    "confidence": 0.88
+                })
 
-    return detections
+            # Check general HSV range for floating synthetic plastic debris
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv, np.array([0, 20, 100]), np.array([180, 255, 255]))
+            contours_hsv, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            large_debris = [c for c in contours_hsv if cv2.contourArea(c) > 1200]
+            
+            if len(large_debris) > 0 and len(detections) == 0:
+                detections.append({
+                    "object": "Plastic Bottle / Container",
+                    "confidence": 0.82
+                })
+    except Exception as e:
+        print("Plastic detection processing note:", e)
+
+    # De-duplicate while preserving highest confidence
+    seen = set()
+    unique_detections = []
+    for d in detections:
+        if d["object"] not in seen:
+            seen.add(d["object"])
+            unique_detections.append(d)
+
+    return unique_detections

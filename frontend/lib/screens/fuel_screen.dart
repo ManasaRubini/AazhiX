@@ -127,15 +127,19 @@ class _FuelScreenState extends State<FuelScreen> {
                           const Icon(
                             Icons.local_gas_station,
                             color: Colors.orangeAccent,
-                            size: 35,
+                            size: 32,
                           ),
                           const SizedBox(width: 10),
-                          Text(
-                            _langProvider.getText("fuel_title"),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              _langProvider.getText("fuel_title"),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],

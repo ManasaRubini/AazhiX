@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/plastic_service.dart';
+import '../services/app_language_provider.dart';
 
 class PlasticScreen extends StatefulWidget {
   const PlasticScreen({super.key});
@@ -11,6 +12,7 @@ class PlasticScreen extends StatefulWidget {
 }
 
 class _PlasticScreenState extends State<PlasticScreen> {
+  final AppLanguageProvider _langProvider = AppLanguageProvider();
   File? image;
   bool loading = false;
   bool plasticDetected = false;
@@ -32,7 +34,7 @@ class _PlasticScreenState extends State<PlasticScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.camera_alt, color: Colors.cyanAccent),
-                  title: const Text("Take Photo (Camera)", style: TextStyle(color: Colors.white)),
+                  title: Text(_langProvider.getText("take_photo"), style: const TextStyle(color: Colors.white)),
                   onTap: () {
                     Navigator.pop(context);
                     pickImage(ImageSource.camera);
@@ -40,7 +42,7 @@ class _PlasticScreenState extends State<PlasticScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.photo_library, color: Colors.greenAccent),
-                  title: const Text("Choose from Gallery", style: TextStyle(color: Colors.white)),
+                  title: Text(_langProvider.getText("choose_gallery"), style: const TextStyle(color: Colors.white)),
                   onTap: () {
                     Navigator.pop(context);
                     pickImage(ImageSource.gallery);
@@ -140,253 +142,261 @@ class _PlasticScreenState extends State<PlasticScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.fromARGB(255, 8, 39, 93),
-              Color.fromARGB(255, 14, 68, 129),
-              Color.fromARGB(255, 13, 121, 171),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// HEADER
-                const Row(
+    return AnimatedBuilder(
+      animation: _langProvider,
+      builder: (context, child) {
+        return Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color.fromARGB(255, 8, 39, 93),
+                  Color.fromARGB(255, 14, 68, 129),
+                  Color.fromARGB(255, 13, 121, 171),
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.recycling,
-                      color: Colors.greenAccent,
-                      size: 35,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      "Plastic Detection",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 25),
-
-                /// CAPTURE BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.greenAccent.shade700,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: showImagePickerSource,
-                    icon: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      "Scan Ocean Image",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// IMAGE PREVIEW
-                if (image != null)
-                  Container(
-                    width: double.infinity,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(.3),
-                          blurRadius: 15,
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.file(
-                      image!,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-
-                const SizedBox(height: 20),
-
-                if (loading)
-                  const Expanded(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(color: Colors.cyanAccent),
-                          SizedBox(height: 15),
-                          Text(
-                            "Analyzing image for plastic debris...",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                if (!loading && image != null)
-                  Expanded(
-                    child: ListView(
+                    /// HEADER
+                    Row(
                       children: [
-                        /// PLASTIC STATUS
-                        resultCard(
-                          "Plastic Detected",
-                          plasticDetected ? "YES" : "NO",
-                          plasticDetected ? Colors.redAccent : Colors.greenAccent,
-                          plasticDetected ? Icons.warning : Icons.check_circle,
+                        const Icon(
+                          Icons.recycling,
+                          color: Colors.greenAccent,
+                          size: 35,
                         ),
-
-                        resultCard(
-                          "Pollution Level",
-                          pollutionLevel,
-                          pollutionLevel == "HIGH"
-                              ? Colors.redAccent
-                              : pollutionLevel == "MEDIUM"
-                                  ? Colors.orangeAccent
-                                  : Colors.greenAccent,
-                          Icons.waves,
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        const Text(
-                          "Detected Objects",
-                          style: TextStyle(
+                        const SizedBox(width: 10),
+                        Text(
+                          _langProvider.getText("plastic_header"),
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
-                        const SizedBox(height: 15),
-
-                        if (detections.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(.08),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                "No plastic debris detected in this image.",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                            ),
-                          )
-                        else
-                          ...detections.map(
-                            (item) {
-                              num rawConf = item["confidence"] ?? 0.85;
-                              double confVal = rawConf.toDouble();
-                              double displayPercentage = confVal <= 1.0 ? confVal * 100 : confVal;
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(18),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.white24,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const CircleAvatar(
-                                      backgroundColor: Colors.green,
-                                      child: Icon(
-                                        Icons.recycling,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 15),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item["object"]?.toString() ?? "Object",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 17,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 5),
-                                          Text(
-                                            "Confidence: ${displayPercentage.toStringAsFixed(1)}%",
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
                       ],
                     ),
-                  ),
 
-                if (!loading && image == null)
-                  Expanded(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(
-                            Icons.camera_alt,
-                            size: 90,
-                            color: Colors.white54,
+                    const SizedBox(height: 25),
+
+                    /// CAPTURE BUTTON
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.greenAccent.shade700,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          SizedBox(height: 15),
-                          Text(
-                            "Scan or select an image to detect\nmarine plastic pollution",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 18,
-                            ),
+                        ),
+                        onPressed: showImagePickerSource,
+                        icon: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          _langProvider.getText("scan_image"),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
+
+                    const SizedBox(height: 20),
+
+                    /// IMAGE PREVIEW
+                    if (image != null)
+                      Container(
+                        width: double.infinity,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(.3),
+                              blurRadius: 15,
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.file(
+                          image!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    if (loading)
+                      const Expanded(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(color: Colors.cyanAccent),
+                              SizedBox(height: 15),
+                              Text(
+                                "Analyzing image for plastic debris...",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    if (!loading && image != null)
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            resultCard(
+                              _langProvider.getText("plastic_detected"),
+                              plasticDetected ? _langProvider.getText("yes") : _langProvider.getText("no"),
+                              plasticDetected ? Colors.redAccent : Colors.greenAccent,
+                              plasticDetected ? Icons.warning : Icons.check_circle,
+                            ),
+
+                            resultCard(
+                              _langProvider.getText("pollution_level"),
+                              pollutionLevel == "HIGH"
+                                  ? _langProvider.getText("high")
+                                  : pollutionLevel == "LOW"
+                                      ? _langProvider.getText("low")
+                                      : pollutionLevel,
+                              pollutionLevel == "HIGH"
+                                  ? Colors.redAccent
+                                  : pollutionLevel == "MEDIUM"
+                                      ? Colors.orangeAccent
+                                      : Colors.greenAccent,
+                              Icons.waves,
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            Text(
+                              _langProvider.getText("detected_objects"),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 15),
+
+                            if (detections.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _langProvider.getText("no_plastic"),
+                                    style: const TextStyle(color: Colors.white70),
+                                  ),
+                                ),
+                              )
+                            else
+                              ...detections.map(
+                                (item) {
+                                  num rawConf = item["confidence"] ?? 0.85;
+                                  double confVal = rawConf.toDouble();
+                                  double displayPercentage = confVal <= 1.0 ? confVal * 100 : confVal;
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(18),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(.12),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const CircleAvatar(
+                                          backgroundColor: Colors.green,
+                                          child: Icon(
+                                            Icons.recycling,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 15),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                item["object"]?.toString() ?? "Object",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 17,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 5),
+                                              Text(
+                                                "Confidence: ${displayPercentage.toStringAsFixed(1)}%",
+                                                style: const TextStyle(
+                                                  color: Colors.white70,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+
+                    if (!loading && image == null)
+                      Expanded(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(
+                                Icons.camera_alt,
+                                size: 90,
+                                color: Colors.white54,
+                              ),
+                              SizedBox(height: 15),
+                              Text(
+                                "Scan or select an image to detect\nmarine plastic pollution",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../services/fishzone_service.dart';
+import '../services/app_language_provider.dart';
 
 
 
@@ -34,25 +35,11 @@ class _FishzoneScreenState extends State<FishzoneScreen> {
 
   LatLng? aiFishZone;
 
-  LatLng currentLocation = const LatLng(11.0168, 76.9558);
+  LatLng currentLocation = const LatLng(10.7800, 79.1200);
 
-
-
-  final LatLng fishZone =
-
-      const LatLng(11.0450, 76.9800);
-
-
-
-  final LatLng plasticZone =
-
-      const LatLng(10.9950, 76.9300);
-
-
-
-  final LatLng harbor =
-
-      const LatLng(11.0200, 76.9400);
+  LatLng get fishZone => LatLng(currentLocation.latitude + 0.028, currentLocation.longitude + 0.024);
+  LatLng get plasticZone => LatLng(currentLocation.latitude - 0.022, currentLocation.longitude - 0.026);
+  LatLng get harbor => LatLng(currentLocation.latitude + 0.004, currentLocation.longitude - 0.016);
 
 
 
@@ -241,47 +228,23 @@ class _FishzoneScreenState extends State<FishzoneScreen> {
 
 
                 /// HEADER
-
                 Row(
-
                   children: [
-
-
-
-                    Icon(
-
+                    const Icon(
                       Icons.set_meal,
-
                       color: Colors.cyanAccent,
-
                       size: 35,
-
                     ),
-
-
-
-                    SizedBox(width: 10),
-
-
-
+                    const SizedBox(width: 10),
                     Text(
-
-                      "Fish Zone",
-
-                      style: TextStyle(
-
+                      AppLanguageProvider().getText("pfz_title"),
+                      style: const TextStyle(
                         color: Colors.white,
-
-                        fontSize: 30,
-
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
-
                       ),
-
                     ),
-
                   ],
-
                 ),
 
 

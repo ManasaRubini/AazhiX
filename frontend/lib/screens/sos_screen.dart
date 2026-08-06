@@ -7,6 +7,7 @@ import 'package:noise_meter/noise_meter.dart';
 import 'dart:async';
 
 import '../services/sos_service.dart';
+import '../services/app_language_provider.dart';
 
 class SosScreen extends StatefulWidget {
   const SosScreen({super.key});
@@ -16,7 +17,7 @@ class SosScreen extends StatefulWidget {
 }
 
 class _SosScreenState extends State<SosScreen> {
-
+  final AppLanguageProvider _langProvider = AppLanguageProvider();
   final FlutterTts tts = FlutterTts();
   final SpeechToText speech = SpeechToText();
 
@@ -25,7 +26,6 @@ class _SosScreenState extends State<SosScreen> {
 
   bool listening = false;
   bool screamDetectionActive = false;
-
   String status = "Standby";
 
   double latitude = 0;
@@ -67,7 +67,6 @@ class _SosScreenState extends State<SosScreen> {
       setState(() {
         status = result["status"] ?? "SOS Sent";
       });
-
     } catch (e) {
       setState(() {
         status = "Failed";
@@ -84,9 +83,7 @@ class _SosScreenState extends State<SosScreen> {
       onResult: (result) {
         final text = result.recognizedWords.toLowerCase();
 
-        if (text.contains("help") ||
-            text.contains("sos") ||
-            text.contains("emergency")) {
+        if (text.contains("help") || text.contains("sos") || text.contains("emergency") || text.contains("ஆபத்து")) {
           triggerSOS();
         }
       },
@@ -126,13 +123,11 @@ class _SosScreenState extends State<SosScreen> {
       longitude = position.longitude;
 
       await SosService().triggerSOS(latitude, longitude);
-
       await tts.speak("Emergency detected. SOS sent.");
 
       setState(() {
         status = "AUTO SOS TRIGGERED";
       });
-
     } catch (e) {
       setState(() {
         status = "Auto SOS failed";
@@ -163,267 +158,263 @@ class _SosScreenState extends State<SosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xff041B43),
-      body: Stack(
-        children: [
-
-          /// Background
-          Positioned.fill(
-            child: Image.asset(
-              "assets/sea_bg.png",
-              fit: BoxFit.cover,
-            ),
-          ),
-
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(.55),
-            ),
-          ),
-
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-
-                  /// Header
-                  const Row(
+    return AnimatedBuilder(
+      animation: _langProvider,
+      builder: (context, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xff041B43),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  "assets/sea_bg.png",
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(.55),
+                ),
+              ),
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
                     children: [
-                      Icon(
-                        Icons.sos,
-                        color: Colors.redAccent,
-                        size: 35,
-                      ),
-                      SizedBox(width: 10),
-                      Text(
-                        "Emergency SOS",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  /// SOS BUTTON
-                  GestureDetector(
-                    onTap: triggerSOS,
-                    child: Container(
-                      width: 220,
-                      height: 220,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const RadialGradient(
-                          colors: [
-                            Colors.redAccent,
-                            Colors.red,
-                            Color(0xff8B0000),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(.8),
-                            blurRadius: 40,
-                            spreadRadius: 5,
+                      /// Header
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.sos,
+                            color: Colors.redAccent,
+                            size: 35,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            _langProvider.getText("sos_header"),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text(
-                          "SOS",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 55,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
-                  /// STATUS CARD
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.08),
-                      borderRadius: BorderRadius.circular(25),
-                      border: Border.all(
-                        color: Colors.white24,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.shield,
-                          color: Colors.cyanAccent,
-                          size: 40,
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          "Emergency Status",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          status,
-                          style: const TextStyle(
-                            color: Colors.greenAccent,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// Voice SOS
-                  Material(
-                    color: Colors.transparent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.orange.withOpacity(.4),
-                        ),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.mic,
-                          color: Colors.orange,
-                        ),
-                        title: const Text(
-                          "Voice SOS",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          listening
-                              ? "Listening..."
-                              : "Say HELP, SOS or EMERGENCY",
-                          style: const TextStyle(
-                            color: Colors.white70,
-                          ),
-                        ),
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.white,
-                        ),
-                        onTap: startVoiceSOS,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  /// Scream Detection
-                  Material(
-                    color: Colors.transparent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.withOpacity(.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.deepPurple.withOpacity(.4),
-                        ),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.hearing,
-                          color: Colors.deepPurpleAccent,
-                        ),
-                        title: const Text(
-                          "Scream Detection",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          screamDetectionActive
-                              ? "Monitoring microphone..."
-                              : "Auto SOS when scream detected",
-                          style: const TextStyle(
-                            color: Colors.white70,
-                          ),
-                        ),
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.white,
-                        ),
-                        onTap: startScreamDetection,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// LOCATION CARD
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.08),
-                      borderRadius: BorderRadius.circular(25),
-                      border: Border.all(
-                        color: Colors.white24,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: Colors.cyanAccent,
+                      /// SOS BUTTON
+                      GestureDetector(
+                        onTap: triggerSOS,
+                        child: Container(
+                          width: 220,
+                          height: 220,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const RadialGradient(
+                              colors: [
+                                Colors.redAccent,
+                                Colors.red,
+                                Color(0xff8B0000),
+                              ],
                             ),
-                            SizedBox(width: 10),
-                            Text(
-                              "Current Location",
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(.8),
+                                blurRadius: 40,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              _langProvider.getText("sos"),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 55,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      /// STATUS CARD
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.08),
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(
+                            color: Colors.white24,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.shield,
+                              color: Colors.cyanAccent,
+                              size: 40,
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Emergency Status",
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
                             ),
+                            const SizedBox(height: 10),
+                            Text(
+                              status,
+                              style: const TextStyle(
+                                color: Colors.greenAccent,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 15),
-                        infoRow(
-                          "Latitude",
-                          latitude.toStringAsFixed(5),
-                        ),
-                        const SizedBox(height: 10),
-                        infoRow(
-                          "Longitude",
-                          longitude.toStringAsFixed(5),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  const SizedBox(height: 30),
-                ],
+                      const SizedBox(height: 20),
+
+                      /// Voice SOS
+                      Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(.4),
+                            ),
+                          ),
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.mic,
+                              color: Colors.orange,
+                            ),
+                            title: Text(
+                              _langProvider.getText("voice_alert"),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              listening ? "Listening..." : "Say HELP, SOS or EMERGENCY",
+                              style: const TextStyle(
+                                color: Colors.white70,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                            ),
+                            onTap: startVoiceSOS,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      /// Scream Detection
+                      Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.deepPurple.withOpacity(.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.deepPurple.withOpacity(.4),
+                            ),
+                          ),
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.hearing,
+                              color: Colors.deepPurpleAccent,
+                            ),
+                            title: Text(
+                              _langProvider.getText("scream_detector"),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              screamDetectionActive ? "Monitoring microphone..." : "Auto SOS when scream detected",
+                              style: const TextStyle(
+                                color: Colors.white70,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                            ),
+                            onTap: startScreamDetection,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// LOCATION CARD
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.08),
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(
+                            color: Colors.white24,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  color: Colors.cyanAccent,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _langProvider.getText("current_gps"),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 15),
+                            infoRow(
+                              "Latitude",
+                              latitude.toStringAsFixed(5),
+                            ),
+                            const SizedBox(height: 10),
+                            infoRow(
+                              "Longitude",
+                              longitude.toStringAsFixed(5),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

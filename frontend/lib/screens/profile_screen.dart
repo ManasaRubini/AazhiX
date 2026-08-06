@@ -96,8 +96,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               "AazhiX is committed to protecting fisherman location data and vessel security.\n\n"
               "1. Location Data: GPS coordinates are used exclusively for real-time weather forecasts, PFZ mapping, and emergency Coast Guard dispatch.\n"
-              "2. Audio Diagnostics: Engine sound recordings are analyzed strictly for machinery health and are never stored for commercial marketing.\n"
-              "3. Emergency Signals: SOS signals transmit coordinates directly to authorized emergency contact networks.",
+              "2. Audio Diagnostics: Engine sound recordings are analyzed strictly for machinery health.\n"
+              "3. Emergency Signals: SOS signals transmit coordinates directly to emergency contact networks.",
               style: TextStyle(color: Colors.white70, height: 1.5),
             ),
           ),
@@ -126,8 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           content: const SingleChildScrollView(
             child: Text(
               "Maritime Safety Notice:\n\n"
-              "AazhiX AI predictions (Potential Fishing Zones, Wave Height Forecasts, Engine Health Advisory) serve as supportive navigational tools.\n"
-              "Captains are advised to combine AazhiX insights with official Coast Guard radio bulletins and maritime port authority regulations.",
+              "AazhiX AI predictions serve as supportive navigational tools.\n"
+              "Captains are advised to combine AazhiX insights with official Coast Guard radio bulletins.",
               style: TextStyle(color: Colors.white70, height: 1.5),
             ),
           ),
@@ -152,25 +152,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(18),
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(.08),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(color: Colors.white24),
         ),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: Colors.cyan.withOpacity(.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Colors.cyanAccent),
+              child: Icon(icon, color: Colors.cyanAccent, size: 22),
             ),
-            const SizedBox(width: 15),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,65 +224,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      /// HEADER
+                      /// HEADER (WRAPPED IN EXPANDED TO ELIMINATE OVERFLOW BANNER)
                       Row(
                         children: [
                           const Icon(Icons.person, color: Colors.cyanAccent, size: 32),
                           const SizedBox(width: 10),
-                          Text(
-                            _langProvider.getText("profile"),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// PROFILE CARD
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(.08),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 90,
-                              height: 90,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [Colors.cyan, Colors.blue],
-                                ),
-                              ),
-                              child: const Icon(Icons.person, size: 55, color: Colors.white),
-                            ),
-                            const SizedBox(height: 15),
-                            Text(
-                              name.isEmpty ? "Captain" : name,
+                          Expanded(
+                            child: Text(
+                              _langProvider.getText("profile"),
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 26,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      /// PROFILE CARD
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.08),
+                          borderRadius: BorderRadius.circular(26),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [Colors.cyan, Colors.blue],
+                                ),
+                              ),
+                              child: const Icon(Icons.person, size: 50, color: Colors.white),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              name.isEmpty ? "Captain" : name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
                             Text(
                               village,
-                              style: const TextStyle(color: Colors.white70, fontSize: 15),
+                              style: const TextStyle(color: Colors.white70, fontSize: 14),
                             ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       Expanded(
                         child: ListView(
@@ -292,21 +295,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: _langProvider.getText("language_setting"),
                               value: AppLanguageProvider.languageNames[_langProvider.currentLanguage] ?? "English",
                               onTap: _showLanguageDialog,
-                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.cyanAccent, size: 18),
+                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.cyanAccent, size: 16),
                             ),
                             profileTile(
                               icon: Icons.person_outline,
-                              title: "Captain Name",
+                              title: _langProvider.getText("lbl_captain_name"),
                               value: name,
                             ),
                             profileTile(
                               icon: Icons.phone,
-                              title: "Phone Number",
+                              title: _langProvider.getText("lbl_phone_number"),
                               value: phone,
                             ),
                             profileTile(
                               icon: Icons.directions_boat,
-                              title: "Boat ID",
+                              title: _langProvider.getText("lbl_boat_id"),
                               value: boatId,
                             ),
                             profileTile(
@@ -314,46 +317,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: _langProvider.getText("privacy_policy"),
                               value: "Read Policies",
                               onTap: _showPrivacyPolicy,
-                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 18),
+                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
                             ),
                             profileTile(
                               icon: Icons.gavel_outlined,
                               title: _langProvider.getText("disclaimer"),
                               value: "Safety Guidance",
                               onTap: _showDisclaimer,
-                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 18),
+                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
                             ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
 
                       Text(
                         _langProvider.getText("version"),
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(color: Colors.white54, fontSize: 11),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
                       /// LOGOUT BUTTON
                       SizedBox(
                         width: double.infinity,
-                        height: 55,
+                        height: 52,
                         child: ElevatedButton.icon(
                           onPressed: logout,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          icon: const Icon(Icons.logout, color: Colors.white),
+                          icon: const Icon(Icons.logout, color: Colors.white, size: 20),
                           label: Text(
                             _langProvider.getText("logout"),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 17,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

@@ -78,31 +78,34 @@ class _MarketScreenState extends State<MarketScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          /// HEADER
+                          /// HEADER (WRAPPED IN EXPANDED TO ELIMINATE YELLOW OVERFLOW BANNER)
                           Row(
                             children: [
                               const Icon(
                                 Icons.auto_graph,
                                 color: Colors.cyanAccent,
-                                size: 35,
+                                size: 32,
                               ),
                               const SizedBox(width: 10),
-                              Text(
-                                _langProvider.getText("market_intel"),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: Text(
+                                  _langProvider.getText("market_intel"),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
 
-                          const SizedBox(height: 25),
+                          const SizedBox(height: 20),
 
                           /// AI CARD
                           Container(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(.08),
                               borderRadius: BorderRadius.circular(25),
@@ -114,9 +117,9 @@ class _MarketScreenState extends State<MarketScreen> {
                                 const Icon(
                                   Icons.psychology,
                                   color: Colors.cyanAccent,
-                                  size: 40,
+                                  size: 38,
                                 ),
-                                const SizedBox(width: 15),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,13 +129,13 @@ class _MarketScreenState extends State<MarketScreen> {
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 18,
+                                          fontSize: 17,
                                         ),
                                       ),
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: 8),
                                       Text(
                                         fishes.isNotEmpty
-                                            ? "Top catch rate: ${fishes[0].fish}\n${fishes[0].recommendation}"
+                                            ? "${_langProvider.getText("top_catch")}: ${_langProvider.translateFish(fishes[0].fish)}\n${_langProvider.translateTrade(fishes[0].recommendation)}"
                                             : "Loading...",
                                         style: const TextStyle(
                                           color: Colors.white70,
@@ -146,9 +149,9 @@ class _MarketScreenState extends State<MarketScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 18),
 
-                          /// MARKET LIST
+                          /// MARKET LIST WITH FISH NAME & TRADE TRANSLATION
                           Expanded(
                             child: RefreshIndicator(
                               onRefresh: () async {
@@ -160,20 +163,22 @@ class _MarketScreenState extends State<MarketScreen> {
                                 itemCount: fishes.length,
                                 itemBuilder: (context, index) {
                                   final fish = fishes[index];
+                                  final translatedFishName = _langProvider.translateFish(fish.fish);
+                                  final translatedTrade = _langProvider.translateTrade(fish.recommendation);
 
                                   return Container(
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    padding: const EdgeInsets.all(18),
+                                    margin: const EdgeInsets.only(bottom: 14),
+                                    padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(.08),
-                                      borderRadius: BorderRadius.circular(25),
+                                      borderRadius: BorderRadius.circular(22),
                                       border: Border.all(color: Colors.white24),
                                     ),
                                     child: Row(
                                       children: [
                                         Container(
-                                          width: 60,
-                                          height: 60,
+                                          width: 54,
+                                          height: 54,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             color: Colors.cyan.withOpacity(.2),
@@ -181,34 +186,34 @@ class _MarketScreenState extends State<MarketScreen> {
                                           child: const Icon(
                                             Icons.set_meal,
                                             color: Colors.cyanAccent,
-                                            size: 30,
+                                            size: 28,
                                           ),
                                         ),
-                                        const SizedBox(width: 15),
+                                        const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                fish.fish,
+                                                translatedFishName,
                                                 style: const TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 18,
+                                                  fontSize: 17,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              const SizedBox(height: 5),
+                                              const SizedBox(height: 4),
                                               Text(
                                                 "₹${fish.price}/kg",
                                                 style: const TextStyle(color: Colors.white70),
                                               ),
-                                              const SizedBox(height: 8),
+                                              const SizedBox(height: 6),
                                               Text(
-                                                fish.recommendation,
+                                                translatedTrade,
                                                 style: TextStyle(
-                                                  color: fish.recommendation == "SELL TODAY"
+                                                  color: fish.recommendation.contains("SELL")
                                                       ? Colors.greenAccent
-                                                      : fish.recommendation == "WAIT 1 DAY"
+                                                      : fish.recommendation.contains("WAIT")
                                                           ? Colors.orangeAccent
                                                           : Colors.redAccent,
                                                   fontWeight: FontWeight.bold,
@@ -219,18 +224,23 @@ class _MarketScreenState extends State<MarketScreen> {
                                         ),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 8,
+                                            horizontal: 12,
+                                            vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
                                             color: getDemandColor(fish.demand),
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(18),
                                           ),
                                           child: Text(
-                                            fish.demand.toUpperCase(),
+                                            fish.demand.toUpperCase() == "HIGH"
+                                                ? _langProvider.getText("high_demand")
+                                                : fish.demand.toUpperCase() == "MEDIUM"
+                                                    ? _langProvider.getText("medium_demand")
+                                                    : _langProvider.getText("low_demand"),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
+                                              fontSize: 12,
                                             ),
                                           ),
                                         ),

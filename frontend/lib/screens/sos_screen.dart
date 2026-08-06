@@ -40,8 +40,10 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   Future<void> initializeSpeech() async {
-    await Permission.microphone.request();
-    await speech.initialize();
+    try {
+      await Permission.microphone.request();
+      await speech.initialize();
+    } catch (_) {}
   }
 
   Future<void> triggerSOS() async {
@@ -52,7 +54,7 @@ class _SosScreenState extends State<SosScreen> {
 
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      );
+      ).timeout(const Duration(seconds: 4));
 
       latitude = position.latitude;
       longitude = position.longitude;
@@ -64,10 +66,12 @@ class _SosScreenState extends State<SosScreen> {
 
       await tts.speak("Emergency signal transmitted");
 
+      if (!mounted) return;
       setState(() {
         status = result["status"] ?? "SOS Sent";
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         status = "Failed";
       });
@@ -125,10 +129,12 @@ class _SosScreenState extends State<SosScreen> {
       await SosService().triggerSOS(latitude, longitude);
       await tts.speak("Emergency detected. SOS sent.");
 
+      if (!mounted) return;
       setState(() {
         status = "AUTO SOS TRIGGERED";
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         status = "Auto SOS failed";
       });
@@ -181,7 +187,7 @@ class _SosScreenState extends State<SosScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      /// Header
+                      /// Header (WRAPPED IN EXPANDED TO PREVENT OVERFLOW BANNER)
                       Row(
                         children: [
                           const Icon(
@@ -190,25 +196,28 @@ class _SosScreenState extends State<SosScreen> {
                             size: 35,
                           ),
                           const SizedBox(width: 10),
-                          Text(
-                            _langProvider.getText("sos_header"),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              _langProvider.getText("sos_header"),
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 25),
 
                       /// SOS BUTTON
                       GestureDetector(
                         onTap: triggerSOS,
                         child: Container(
-                          width: 220,
-                          height: 220,
+                          width: 200,
+                          height: 200,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: const RadialGradient(
@@ -227,19 +236,23 @@ class _SosScreenState extends State<SosScreen> {
                             ],
                           ),
                           child: Center(
-                            child: Text(
-                              _langProvider.getText("sos"),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 55,
-                                fontWeight: FontWeight.bold,
+                            child: Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: Text(
+                                _langProvider.getText("sos"),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 42,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 25),
 
                       /// STATUS CARD
                       Container(
@@ -257,20 +270,20 @@ class _SosScreenState extends State<SosScreen> {
                             const Icon(
                               Icons.shield,
                               color: Colors.cyanAccent,
-                              size: 40,
+                              size: 38,
                             ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              "Emergency Status",
-                              style: TextStyle(
+                            const SizedBox(height: 8),
+                            Text(
+                              _langProvider.getText("emergency_status"),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontSize: 17,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 8),
                             Text(
-                              status,
+                              status == "Standby" ? _langProvider.getText("standby") : status,
                               style: const TextStyle(
                                 color: Colors.greenAccent,
                                 fontSize: 16,
@@ -281,7 +294,7 @@ class _SosScreenState extends State<SosScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 15),
 
                       /// Voice SOS
                       Material(
@@ -307,7 +320,7 @@ class _SosScreenState extends State<SosScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              listening ? "Listening..." : "Say HELP, SOS or EMERGENCY",
+                              listening ? "Listening..." : _langProvider.getText("voice_sub"),
                               style: const TextStyle(
                                 color: Colors.white70,
                               ),
@@ -315,6 +328,7 @@ class _SosScreenState extends State<SosScreen> {
                             trailing: const Icon(
                               Icons.arrow_forward_ios,
                               color: Colors.white,
+                              size: 16,
                             ),
                             onTap: startVoiceSOS,
                           ),
@@ -347,7 +361,7 @@ class _SosScreenState extends State<SosScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              screamDetectionActive ? "Monitoring microphone..." : "Auto SOS when scream detected",
+                              screamDetectionActive ? "Monitoring..." : _langProvider.getText("scream_sub"),
                               style: const TextStyle(
                                 color: Colors.white70,
                               ),
@@ -355,13 +369,14 @@ class _SosScreenState extends State<SosScreen> {
                             trailing: const Icon(
                               Icons.arrow_forward_ios,
                               color: Colors.white,
+                              size: 16,
                             ),
                             onTap: startScreamDetection,
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 15),
 
                       /// LOCATION CARD
                       Container(
@@ -387,19 +402,19 @@ class _SosScreenState extends State<SosScreen> {
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: 17,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 15),
                             infoRow(
-                              "Latitude",
+                              _langProvider.getText("latitude"),
                               latitude.toStringAsFixed(5),
                             ),
                             const SizedBox(height: 10),
                             infoRow(
-                              "Longitude",
+                              _langProvider.getText("longitude"),
                               longitude.toStringAsFixed(5),
                             ),
                           ],

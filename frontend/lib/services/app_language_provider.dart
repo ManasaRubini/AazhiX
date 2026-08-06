@@ -39,6 +39,60 @@ class AppLanguageProvider extends ChangeNotifier {
         key;
   }
 
+  // Fish Name Translator Helper
+  String translateFish(String originalName) {
+    if (_currentLanguage == "ta") {
+      switch (originalName.toLowerCase()) {
+        case "tuna":
+          return "சூரை மீன் (Tuna)";
+        case "sardine":
+          return "மத்தி மீன் (Sardine)";
+        case "mackerel":
+          return "கானாங்கெளுத்தி (Mackerel)";
+        case "pomfret":
+          return "வவ்வால் மீன் (Pomfret)";
+        case "anchovy":
+          return "நெத்திலி மீன் (Anchovy)";
+        case "salmon":
+          return "சால்மன் (Salmon)";
+        default:
+          return originalName;
+      }
+    } else if (_currentLanguage == "hi") {
+      switch (originalName.toLowerCase()) {
+        case "tuna":
+          return "ट्यूना (Tuna)";
+        case "sardine":
+          return "तारली (Sardine)";
+        case "mackerel":
+          return "बांगड़ा (Mackerel)";
+        case "pomfret":
+          return "पॉपलेट (Pomfret)";
+        case "anchovy":
+          return "एंकोवी (Anchovy)";
+        case "salmon":
+          return "रावस (Salmon)";
+        default:
+          return originalName;
+      }
+    }
+    return originalName;
+  }
+
+  // Trade Recommendation Translator Helper
+  String translateTrade(String originalTrade) {
+    if (_currentLanguage == "ta") {
+      if (originalTrade.toUpperCase().contains("SELL")) return "இன்று விற்கவும்";
+      if (originalTrade.toUpperCase().contains("WAIT")) return "1 நாள் காத்திருக்கவும்";
+      if (originalTrade.toUpperCase().contains("NOT")) return "விற்க வேண்டாம்";
+    } else if (_currentLanguage == "hi") {
+      if (originalTrade.toUpperCase().contains("SELL")) return "आज ही बेचें";
+      if (originalTrade.toUpperCase().contains("WAIT")) return "1 दिन रुकें";
+      if (originalTrade.toUpperCase().contains("NOT")) return "न बेचें";
+    }
+    return originalTrade;
+  }
+
   static const Map<String, Map<String, String>> _translations = {
     "en": {
       "home": "Home",
@@ -62,11 +116,17 @@ class AppLanguageProvider extends ChangeNotifier {
       "notifications": "Maritime Alerts",
       "no_alerts": "No active notifications at this time.",
       "clear_all": "Clear All",
-      "language_setting": "App Language / மொழி",
+      "language_setting": "App Language",
       "privacy_policy": "Privacy Policy",
       "disclaimer": "Maritime Safety Disclaimer",
       "logout": "Logout",
       "version": "App Version v1.0.0 (Production Ready)",
+
+      // Profile Field Labels
+      "lbl_captain_name": "Captain Name",
+      "lbl_phone_number": "Phone Number",
+      "lbl_boat_id": "Boat Registration ID",
+      "lbl_village": "Home Port / Village",
 
       // Weather Screen
       "temp": "Temperature",
@@ -79,15 +139,18 @@ class AppLanguageProvider extends ChangeNotifier {
       // Fish Zone Screen
       "pfz_title": "Potential Fishing Zone",
       "catch_probability": "Catch Probability",
+      "catch_sub": "AI predicts fish concentration in this zone.",
       "target_species": "Target Species",
       "current_gps": "Current GPS Location",
-      "advisory": "Ocean Fishing Advisory",
+      "ai_rec": "AI Recommendation",
+      "distance": "Distance",
+      "sea_state": "Sea State",
 
       // Fuel Screen
       "fuel_capacity": "Fuel Capacity (L)",
       "current_fuel": "Current Fuel Level (L)",
-      "distance": "Voyage Distance (km)",
-      "consumption": "Consumption (L/km)",
+      "trip_distance": "Voyage Distance (km)",
+      "consumption": "Consumption Rate (L/km)",
       "sea_condition": "Sea Condition",
       "calm": "Calm",
       "medium": "Medium",
@@ -103,13 +166,11 @@ class AppLanguageProvider extends ChangeNotifier {
       "market_intel": "Fish Market Rates",
       "price_per_kg": "Price / kg",
       "demand": "Market Demand",
-      "high_demand": "High Demand",
-      "medium_demand": "Medium Demand",
-      "low_demand": "Low Demand",
-      "recommendation": "Trading Advice",
-      "sell_today": "SELL TODAY",
-      "wait_1_day": "WAIT 1 DAY",
-      "do_not_sell": "DO NOT SELL",
+      "high_demand": "HIGH",
+      "medium_demand": "MEDIUM",
+      "low_demand": "LOW",
+      "recommendation": "AI Trade Advice",
+      "top_catch": "Best Market Opportunity",
 
       // Plastic Screen
       "plastic_header": "Ocean Plastic Alert",
@@ -135,18 +196,23 @@ class AppLanguageProvider extends ChangeNotifier {
       "warning": "Warning / Misalignment",
 
       // SOS Screen
-      "sos_header": "Emergency Distress (SOS)",
+      "sos_header": "Emergency SOS Safety",
       "tap_sos": "TAP FOR EMERGENCY SOS",
+      "emergency_status": "Emergency Status",
+      "standby": "Standby / Monitoring",
       "transmitting_gps": "Transmitting Live Coordinates",
       "voice_alert": "Voice Alert Monitor",
-      "scream_detector": "High Noise / Scream Detector",
-      "coast_guard": "Nagapattinam Coast Guard",
+      "voice_sub": "Say HELP, SOS or EMERGENCY",
+      "scream_detector": "Scream & Noise Detector",
+      "scream_sub": "Auto SOS when scream detected",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
     },
 
     "ta": {
       "home": "முகப்பு",
-      "fish_zone": "மீன் மண்டலம்",
-      "sos": "அவசரம் (SOS)",
+      "fish_zone": "மீன் வளம்",
+      "sos": "அவசரம்",
       "market": "சந்தை",
       "profile": "சுயவிவரம்",
       "welcome_back": "மீண்டும் வருக,",
@@ -158,7 +224,7 @@ class AppLanguageProvider extends ChangeNotifier {
       "weather_sub": "நேரலை தகவல்கள்",
       "marine_doc_title": "மரைன் டாக்டர்",
       "marine_doc_sub": "இயந்திர ஆலோசனை",
-      "fuel_title": "எரிபொருள் மேம்பாடு",
+      "fuel_title": "எரிபொருள் மேலாண்மை",
       "fuel_sub": "எரிபொருள் சேமிப்பு",
       "plastic_title": "பிளாஸ்டிக் விழிப்புணர்வு",
       "plastic_sub": "கடலை சுத்தமாக வைக்கவும்",
@@ -171,6 +237,12 @@ class AppLanguageProvider extends ChangeNotifier {
       "logout": "வெளியேறு",
       "version": "செயலி பதிப்பு v1.0.0 (தயார் நிலை)",
 
+      // Profile Field Labels
+      "lbl_captain_name": "கேப்டன் பெயர்",
+      "lbl_phone_number": "தொலைபேசி எண்",
+      "lbl_boat_id": "படகுகளின் எண் (Boat ID)",
+      "lbl_village": "துறைமுகம் / கிராமம்",
+
       // Weather Screen
       "temp": "வெப்பநிலை",
       "humidity": "ஈரப்பதம்",
@@ -182,14 +254,17 @@ class AppLanguageProvider extends ChangeNotifier {
       // Fish Zone Screen
       "pfz_title": "மீன்பிடி வாய்ப்பு மண்டலம்",
       "catch_probability": "மீன் பிடிக்கும் வாய்ப்பு",
+      "catch_sub": "இந்த பகுதியில் மீன் வளத்தை AI கணித்துள்ளது.",
       "target_species": "மீன் வகை",
       "current_gps": "தற்போதைய ஜிபிஎஸ் இடம்",
-      "advisory": "கடல் மீன்பிடி ஆலோசனை",
+      "ai_rec": "செயற்கை நுண்ணறிவு ஆலோசனை",
+      "distance": "தூரம்",
+      "sea_state": "கடல் நிலை",
 
       // Fuel Screen
       "fuel_capacity": "எரிபொருள் கொள்ளளவு (லிட்டர்)",
       "current_fuel": "தற்போதைய எரிபொருள் (லிட்டர்)",
-      "distance": "பயண தூரம் (கி.மீ)",
+      "trip_distance": "பயண தூரம் (கி.மீ)",
       "consumption": "எரிபொருள் பயன்பாடு (லி/கிமீ)",
       "sea_condition": "கடல் நிலை",
       "calm": "அமைதி",
@@ -210,9 +285,7 @@ class AppLanguageProvider extends ChangeNotifier {
       "medium_demand": "மிதமான தேவை",
       "low_demand": "குறைந்த தேவை",
       "recommendation": "வியாபார ஆலோசனை",
-      "sell_today": "இன்று விற்கவும்",
-      "wait_1_day": "1 நாள் காத்திருக்கவும்",
-      "do_not_sell": "விற்க வேண்டாம்",
+      "top_catch": "சிறந்த விற்பனை வாய்ப்பு",
 
       // Plastic Screen
       "plastic_header": "பிளாஸ்டிக் கழிவு விழிப்புணர்வு",
@@ -229,7 +302,7 @@ class AppLanguageProvider extends ChangeNotifier {
       "no": "இல்லை",
 
       // Marine Doctor Screen
-      "doctor_header": "மரைன் டாக்டர் இயந்திர சோதனை",
+      "doctor_header": "மரைன் டாக்டர் சோதனை",
       "record_sound": "இயந்திர ஒலியை பதிவு செய்",
       "analyzing": "இயந்திர ஒலியை பகுப்பாய்வு செய்கிறது...",
       "health_score": "இயந்திர ஆரோக்கிய நிலை",
@@ -240,10 +313,15 @@ class AppLanguageProvider extends ChangeNotifier {
       // SOS Screen
       "sos_header": "அவசர பாதுகாப்பு (SOS)",
       "tap_sos": "அவசர உதவிக்கு அழுத்தவும்",
+      "emergency_status": "அவசர நிலைமை",
+      "standby": "காத்திருப்பு நிலை",
       "transmitting_gps": "ஜிபிஎஸ் இருப்பிடம் அனுப்பப்படுகிறது",
       "voice_alert": "குரல் கண்காணிப்பு",
+      "voice_sub": "HELP, SOS அல்லது எமர்ஜென்சி எனக் கூறவும்",
       "scream_detector": "அலறல் ஒலி கண்டறிதல்",
-      "coast_guard": "நாகப்பட்டினம் கடலோரக் காவல் படை",
+      "scream_sub": "அலறல் கேட்டால் தானியங்கி SOS",
+      "latitude": "அட்சரேகை (Latitude)",
+      "longitude": "தீர்க்கரேகை (Longitude)",
     },
 
     "hi": {
@@ -274,6 +352,11 @@ class AppLanguageProvider extends ChangeNotifier {
       "logout": "लॉग आउट",
       "version": "ऐप संस्करण v1.0.0 (उत्पादन तैयार)",
 
+      "lbl_captain_name": "कप्तान का नाम",
+      "lbl_phone_number": "फोन नंबर",
+      "lbl_boat_id": "नाव पंजीकरण आईडी",
+      "lbl_village": "बंदरगाह / गांव",
+
       "temp": "तापमान",
       "humidity": "नमी",
       "wind_speed": "हवा की गति",
@@ -281,14 +364,14 @@ class AppLanguageProvider extends ChangeNotifier {
       "condition": "मौसम की स्थिति",
       "refresh": "मौसम अपडेट करें",
 
-      "pfz_title": "संभावित मछली पकड़ने का क्षेत्र",
+      "pfz_title": "संभावित मछली क्षेत्र",
       "catch_probability": "पकड़ने की संभावना",
       "target_species": "मछली की प्रजाति",
       "advisory": "समुद्री मछली पकड़ने की सलाह",
 
       "fuel_capacity": "ईंधन क्षमता (लीटर)",
       "current_fuel": "वर्तमान ईंधन (लीटर)",
-      "distance": "यात्रा की दूरी (किमी)",
+      "trip_distance": "यात्रा की दूरी (किमी)",
       "consumption": "ईंधन खपत",
       "sea_condition": "समुद्र की स्थिति",
       "calm": "शांत",
@@ -317,115 +400,12 @@ class AppLanguageProvider extends ChangeNotifier {
 
       "sos_header": "आपातकालीन सहायता (SOS)",
       "tap_sos": "SOS बटन दबाएं",
-      "coast_guard": "भारतीय तटरक्षक",
-    },
-    "ml": {
-      "home": "ഹോം",
-      "fish_zone": "മത്സ്യ മേഖല",
-      "sos": "അടിയന്തരം",
-      "market": "മാർക്കറ്റ്",
-      "profile": "പ്രൊഫൈൽ",
-      "welcome_back": "വീണ്ടും സ്വാഗതം,",
-      "captain": "ക്യാപ്റ്റൻ 👋",
-      "safe_fishing": "സുരക്ഷിതമായ മീൻപിടുത്തം ഇവിടെ ആരംഭിക്കുന്നു",
-      "live_weather": "തത്സമയ കടൽ കാലാവസ്ഥ",
-      "quick_access": "⚓ ദ്രുത പ്രവേശനം",
-      "weather_title": "കാലാവസ്ഥ",
-      "weather_sub": "തത്സമയ വിവരങ്ങൾ",
-      "marine_doc_title": "മറൈൻ ഡോക്ടർ",
-      "marine_doc_sub": "എഞ്ചിൻ ഉപദേശം",
-      "fuel_title": "ഇന്ധന ലാഭം",
-      "fuel_sub": "ഇന്ധനം ലാഭിക്കൂ",
-      "plastic_title": "പ്ലാസ്റ്റിക് ജാഗ്രത",
-      "plastic_sub": "കടൽ ശുചിയാക്കുക",
-      "notifications": "കടൽ അറിയിപ്പുകൾ",
-      "no_alerts": "ഇപ്പോൾ പുതിയ അറിയിപ്പുകൾ ഇല്ല.",
-      "clear_all": "എല്ലാം ഒഴിവാക്കുക",
-      "language_setting": "ആപ്പ് ഭാഷ",
-      "privacy_policy": "സ്വകാര്യതാ നയം",
-      "disclaimer": "സുരക്ഷാ മുന്നറിയിപ്പ്",
-      "logout": "ലോഗ് ഔട്ട്",
-      "version": "ആപ്പ് പതിപ്പ് v1.0.0",
-
-      "temp": "താപനില",
-      "humidity": "ഈർപ്പം",
-      "wind_speed": "കാറ്റിന്റെ വേഗത",
-      "wave_height": "തിരമാല ഉയരം",
-      "refresh": "കാലാവസ്ഥ വിവരങ്ങൾ പുതുക്കുക",
-
-      "pfz_title": "മത്സ്യ ബന്ധന മേഖല",
-      "catch_probability": "സാധ്യത",
-      "advisory": "ഉപദേശം",
-
-      "fuel_capacity": "ഇന്ധന അളവ്",
-      "calculate_fuel": "ഇന്ധന സുരക്ഷ പരിശോധിക്കുക",
-      "safe_to_go": "സുരക്ഷിതം",
-
-      "market_intel": "മത്സ്യ വിപണി നിരക്ക്",
-      "sell_today": "ഇന്ന് വിൽക്കുക",
-
-      "plastic_header": "പ്ലാസ്റ്റിക് ജാഗ്രത",
-      "scan_image": "ചിത്രം സ്കാൻ ചെയ്യുക",
-
-      "doctor_header": "മറൈൻ ഡോക്ടർ",
-      "record_sound": "എഞ്ചിൻ ശബ്ദം റെക്കോർഡ് ചെയ്യുക",
-
-      "sos_header": "അടിയന്തര സഹായം (SOS)",
-      "coast_guard": "കോസ്റ്റ് ഗാർഡ്",
-    },
-    "te": {
-      "home": "హోమ్",
-      "fish_zone": "చేపల జోన్",
-      "sos": "అత్యవసరం",
-      "market": "మార్కెట్",
-      "profile": "ప్రొఫైల్",
-      "welcome_back": "స్వాగతం,",
-      "captain": "కెప్టెన్ 👋",
-      "safe_fishing": "సురక్షితమైన వేట ఇక్కడే ప్రారంభమవుతుంది",
-      "live_weather": "లైవ్ సముద్ర వాతావరణం",
-      "quick_access": "⚓ త్వరిత ప్రవేశం",
-      "weather_title": "వాతావరణం",
-      "weather_sub": "లైవ్ సమాచారం",
-      "marine_doc_title": "మెరైన్ డాక్టర్",
-      "marine_doc_sub": "ఇంజిన్ సలహా",
-      "fuel_title": "ఇంధన ఆదా",
-      "fuel_sub": "ఇంధనం ఆదా చేయండి",
-      "plastic_title": "ప్లాస్టిక్ హెచ్చరిక",
-      "plastic_sub": "సముద్రాన్ని పరిశుభ్రంగా ఉంచండి",
-      "notifications": "సముద్ర హెచ్చరికలు",
-      "no_alerts": "ప్రస్తుతం ఎటువంటి హెచ్చరికలు లేవు.",
-      "clear_all": "అన్నీ తొలగించండి",
-      "language_setting": "యాప్ భాష",
-      "privacy_policy": "గోప్యతా విధానం",
-      "disclaimer": "సముద్ర భద్రతా నిరాకరణ",
-      "logout": "లాగ్ అవుట్",
-      "version": "యాప్ వెర్షన్ v1.0.0",
-
-      "temp": "ఉష్ణోగ్రత",
-      "humidity": "తేమ",
-      "wind_speed": "గాలి వేగం",
-      "wave_height": "అలల ఎత్తు",
-      "refresh": "వాతావరణం నవీకరించు",
-
-      "pfz_title": "చేపల వేట జోన్",
-      "catch_probability": "చేపలు దొరికే అవకాశం",
-      "advisory": "సముద్ర సలహా",
-
-      "fuel_capacity": "ఇంధన సామర్థ్యం",
-      "calculate_fuel": "ఇంధన భద్రత లెక్కించు",
-      "safe_to_go": "సురక్షితం",
-
-      "market_intel": "చేపల మార్కెట్ ధరలు",
-      "sell_today": "ఈరోజు అమ్మండి",
-
-      "plastic_header": "ప్లాస్టిక్ వ్యర్థాల హెచ్చరిక",
-      "scan_image": "ఫొటో స్కాన్ చేయండి",
-
-      "doctor_header": "మెరైన్ డాక్టర్",
-      "record_sound": "ఇంజిన్ శబ్దం రికార్డు చేయండి",
-
-      "sos_header": "అత్యవసర సహాయం (SOS)",
-      "coast_guard": "కోస్ట్ గార్డ్",
+      "emergency_status": "आपातकालीन स्थिति",
+      "standby": "निगरानी जारी है",
+      "voice_alert": "आवाज निगरानी",
+      "scream_detector": "चिल्लाने की पहचान",
+      "latitude": "अक्षांश (Latitude)",
+      "longitude": "देशांतर (Longitude)",
     },
   };
 }

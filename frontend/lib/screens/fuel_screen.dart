@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../models/fuel_model.dart';
 import '../services/fuel_service.dart';
+import '../services/fishzone_service.dart';
 import '../services/app_language_provider.dart';
 
 class FuelScreen extends StatefulWidget {
@@ -42,6 +43,31 @@ class _FuelScreenState extends State<FuelScreen> {
 
   bool isOnLandOrHarbor = true;
   String activePortName = "Nagapattinam Fishing Port";
+
+  // Species & Fish Rich Zone Profit State
+  String selectedSpecies = "Tuna";
+  int catchProbability = 88;
+
+  final Map<String, double> speciesPrices = {
+    "Tuna": 280.0,
+    "Mackerel": 220.0,
+    "Sardine": 120.0,
+    "Pomfret": 450.0,
+  };
+
+  final Map<String, double> speciesYieldKg = {
+    "Tuna": 85.0,
+    "Mackerel": 110.0,
+    "Sardine": 180.0,
+    "Pomfret": 55.0,
+  };
+
+  double get currentPricePerKg => speciesPrices[selectedSpecies] ?? 280.0;
+  double get currentYieldKg => speciesYieldKg[selectedSpecies] ?? 85.0;
+  double get estimatedRevenue => currentYieldKg * currentPricePerKg;
+  double get estimatedFuelCost => (data?.cost != null) ? (data!.cost as num).toDouble() : (distance * consumption * 105);
+  double get netTripProfit => estimatedRevenue - estimatedFuelCost;
+  double get fuelProfitSavings => (distance * consumption * 0.22 * 105);
 
   final List<Map<String, dynamic>> ports = [
     {"name": "Nagapattinam Port", "pos": const LatLng(10.7600, 79.8500)},
@@ -83,6 +109,7 @@ class _FuelScreenState extends State<FuelScreen> {
   void initState() {
     super.initState();
     _fetchLocation();
+    _fetchPFZDestination();
     optimize();
   }
 
@@ -105,7 +132,6 @@ class _FuelScreenState extends State<FuelScreen> {
       if (!mounted) return;
 
       LatLng userPos = LatLng(position.latitude, position.longitude);
-      // Offshore condition: longitude > 80.05 or latitude < 7.9
       bool offshore = (userPos.longitude > 80.05 || userPos.latitude < 7.9);
 
       if (offshore) {
@@ -113,10 +139,8 @@ class _FuelScreenState extends State<FuelScreen> {
           isOnLandOrHarbor = false;
           activePortName = "Live Offshore GPS";
           currentBoatLocation = userPos;
-          destinationLocation = LatLng(userPos.latitude + 0.14, userPos.longitude + 0.21);
         });
       } else {
-        // User is currently testing from land / home. Snap departure to nearest coastal fishing port!
         double minDistance = double.infinity;
         Map<String, dynamic> nearestPort = ports.first;
 
@@ -133,12 +157,35 @@ class _FuelScreenState extends State<FuelScreen> {
           isOnLandOrHarbor = true;
           activePortName = nearestPort["name"];
           currentBoatLocation = nearestPort["pos"];
-          destinationLocation = LatLng(currentBoatLocation.latitude + 0.14, currentBoatLocation.longitude + 0.20);
         });
       }
+      await _fetchPFZDestination();
       _mapController.move(currentBoatLocation, 11.5);
     } catch (e) {
       debugPrint("Location lookup fallback used: $e");
+    }
+  }
+
+  Future<void> _fetchPFZDestination() async {
+    try {
+      final pfzData = await FishzoneService().getFishZone(
+        currentBoatLocation.latitude,
+        currentBoatLocation.longitude,
+        selectedSpecies,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        catchProbability = pfzData["fish_probability"] ?? 88;
+        if (pfzData["latitude"] != null && pfzData["longitude"] != null) {
+          destinationLocation = LatLng(
+            (pfzData["latitude"] as num).toDouble(),
+            (pfzData["longitude"] as num).toDouble(),
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint("PFZ destination lookup note: $e");
     }
   }
 
@@ -177,8 +224,8 @@ class _FuelScreenState extends State<FuelScreen> {
           isNavigating = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(" Destination Fishing Ground Reached safely! Fuel saved: 22%"),
+          SnackBar(
+            content: Text(" 🐟 Arrived at High-Yield $selectedSpecies PFZ! Net Profit Boost: +₹${fuelProfitSavings.toStringAsFixed(0)}"),
             backgroundColor: Colors.green,
           ),
         );
@@ -217,14 +264,14 @@ class _FuelScreenState extends State<FuelScreen> {
   String getTurnGuidanceText() {
     String prefix = isOnLandOrHarbor ? "Departure from $activePortName: " : "";
     if (selectedRoute == "eco") {
-      if (currentWaypointIndex == 0) return "${prefix}Head 045° NE into Coastal Current vector (+1.8 kt drift assistance)";
-      if (currentWaypointIndex == 1) return "Turn 15° Right to align with Deep Ocean Eco Channel";
-      if (currentWaypointIndex == 2) return "Maintain steady speed 8.5 kt along low-friction current corridor";
-      return "Approaching High Yield Fishing Zone target waypoint";
+      if (currentWaypointIndex == 0) return "${prefix}Routing to $catchProbability% High-Profit $selectedSpecies Zone via Eco Current vector (+1.8 kt drift)";
+      if (currentWaypointIndex == 1) return "Turn 15° Right into Deep Ocean Current Channel (saving 4.2 L fuel)";
+      if (currentWaypointIndex == 2) return "Maintain 8.5 kt speed to maximize net trip profit to ₹${netTripProfit.toStringAsFixed(0)}";
+      return "Approaching High Density $selectedSpecies Hotspot ($catchProbability% catch prob)";
     } else if (selectedRoute == "coastal") {
-      return "${prefix}Coastline Buffer Route: Head 030° N, stay within 4 NM from shoreline safety harbors";
+      return "${prefix}Coastline Safety Route: Stay within 4 NM from shore to reach $selectedSpecies PFZ";
     } else {
-      return "${prefix}Direct High Drag Route: Head 055° NE straight into opposing wave resistance";
+      return "${prefix}Direct Route: Straight path to $selectedSpecies PFZ with higher wave drag (+15% fuel)";
     }
   }
 
@@ -425,9 +472,79 @@ class _FuelScreenState extends State<FuelScreen> {
 
                       const SizedBox(height: 18),
 
+                      /// 🐟 TARGET SPECIES & PROFIT OPTIMIZER SELECTOR CHIPS
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.10),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.stars, color: Colors.amberAccent, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Target High-Profit Fish Species",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: speciesPrices.keys.map((species) {
+                                  bool isSel = selectedSpecies == species;
+                                  double price = speciesPrices[species]!;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: ChoiceChip(
+                                      avatar: Icon(
+                                        Icons.set_meal,
+                                        color: isSel ? Colors.black : Colors.amberAccent,
+                                        size: 18,
+                                      ),
+                                      label: Text(
+                                        "$species (₹${price.toStringAsFixed(0)}/kg)",
+                                        style: TextStyle(
+                                          color: isSel ? Colors.black : Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      selected: isSel,
+                                      selectedColor: Colors.amberAccent,
+                                      backgroundColor: Colors.white12,
+                                      onSelected: (bool selected) {
+                                        if (selected) {
+                                          setState(() {
+                                            selectedSpecies = species;
+                                          });
+                                          _fetchPFZDestination();
+                                          optimize();
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
                       /// 🗺️ REAL INTERACTIVE MARITIME GPS NAVIGATION MAP CARD
                       Container(
-                        height: 380,
+                        height: 390,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(28),
@@ -518,24 +635,51 @@ class _FuelScreenState extends State<FuelScreen> {
                                           size: 26,
                                         ),
                                       ),
-                                    // Target Destination Waypoint Marker
+                                    // Target Fish-Rich Zone Destination Marker
                                     Marker(
                                       point: destinationLocation,
-                                      width: 60,
-                                      height: 60,
+                                      width: 140,
+                                      height: 75,
                                       child: Column(
                                         children: [
                                           Container(
-                                            padding: const EdgeInsets.all(6),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                             decoration: BoxDecoration(
                                               color: Colors.green.shade900.withOpacity(.9),
-                                              shape: BoxShape.circle,
+                                              borderRadius: BorderRadius.circular(16),
                                               border: Border.all(color: Colors.amberAccent, width: 2),
+                                              boxShadow: const [
+                                                BoxShadow(color: Colors.black45, blurRadius: 8),
+                                              ],
                                             ),
-                                            child: const Icon(
-                                              Icons.phishing,
-                                              color: Colors.amberAccent,
-                                              size: 24,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.set_meal, color: Colors.amberAccent, size: 20),
+                                                const SizedBox(width: 6),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      "$catchProbability% $selectedSpecies",
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                    const Text(
+                                                      "HIGH-PROFIT PFZ",
+                                                      style: TextStyle(
+                                                        color: Colors.amberAccent,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 9,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],
@@ -588,7 +732,7 @@ class _FuelScreenState extends State<FuelScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            "Route: ${selectedRoute.toUpperCase()} | Speed: 9.2 knots",
+                                            "Target: $selectedSpecies ($catchProbability%) | Net Profit: ₹${netTripProfit.toStringAsFixed(0)}",
                                             style: const TextStyle(color: Colors.cyanAccent, fontSize: 11),
                                           ),
                                         ],
@@ -628,6 +772,120 @@ class _FuelScreenState extends State<FuelScreen> {
                                         color: isNavigating ? Colors.white : Colors.black,
                                         fontWeight: FontWeight.bold,
                                       ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// 💰 NET VOYAGE PROFIT METRICS DASHBOARD (PFZ PROFIT OPTIMIZATION)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.amber.shade900.withOpacity(.6),
+                              Colors.teal.shade900.withOpacity(.6),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(color: Colors.amberAccent, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.amberAccent.withOpacity(.2),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.monetization_on, color: Colors.amberAccent, size: 28),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Net Voyage Profit Predictor",
+                                        style: TextStyle(
+                                          color: Colors.amberAccent,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        "AI Optimized Route to High-Density $selectedSpecies Zone",
+                                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Column(
+                                  children: [
+                                    const Text("Est. Catch Revenue", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "₹${estimatedRevenue.toStringAsFixed(0)}",
+                                      style: const TextStyle(color: Colors.greenAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                                    ),
+                                    Text("${currentYieldKg.toStringAsFixed(0)} kg @ ₹${currentPricePerKg.toStringAsFixed(0)}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                                  ],
+                                ),
+                                Container(height: 45, width: 1, color: Colors.white24),
+                                Column(
+                                  children: [
+                                    const Text("Optimized Fuel Cost", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "-₹${estimatedFuelCost.toStringAsFixed(0)}",
+                                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                                    ),
+                                    Text("Saved ₹${costSavedRupees.toStringAsFixed(0)} in fuel", style: const TextStyle(color: Colors.greenAccent, fontSize: 11)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 15),
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.black45,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.amberAccent.withOpacity(.4)),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.trending_up, color: Colors.greenAccent),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        "NET TRIP PROFIT:",
+                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    "₹${netTripProfit.toStringAsFixed(0)}",
+                                    style: const TextStyle(
+                                      color: Colors.amberAccent,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
@@ -695,61 +953,6 @@ class _FuelScreenState extends State<FuelScreen> {
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 20),
-
-                      /// SAVINGS HIGHLIGHT CARD (WHEN ECO ROUTE SELECTED)
-                      if (selectedRoute == "eco")
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.green.shade800.withOpacity(.6), Colors.teal.shade900.withOpacity(.6)],
-                            ),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: Colors.greenAccent),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Column(
-                                children: [
-                                  Text(
-                                    _langProvider.getText("fuel_saved"),
-                                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "-${fuelSavedLiters.toStringAsFixed(1)} L",
-                                    style: const TextStyle(
-                                      color: Colors.greenAccent,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(height: 40, width: 1, color: Colors.white24),
-                              Column(
-                                children: [
-                                  Text(
-                                    _langProvider.getText("cost_saved"),
-                                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "₹${costSavedRupees.toStringAsFixed(0)}",
-                                    style: const TextStyle(
-                                      color: Colors.amberAccent,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
 
                       const SizedBox(height: 20),
 

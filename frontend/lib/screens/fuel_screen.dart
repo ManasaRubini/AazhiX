@@ -261,6 +261,72 @@ class _FuelScreenState extends State<FuelScreen> {
     }
   }
 
+  void showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color.fromARGB(255, 14, 45, 90),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+          side: const BorderSide(color: Colors.cyanAccent),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.lightbulb_circle, color: Colors.amberAccent, size: 28),
+            SizedBox(width: 10),
+            Text(
+              "How Fuel Optimizer Works",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "1. Ocean Current Conveyor Belt 🌊",
+                style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text(
+                "Instead of sailing straight against heavy waves, the AI Eco-Current route steers your boat into ocean current vectors that push your boat forward (+1.8 knots drift), saving 22% fuel.",
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              SizedBox(height: 12),
+              Text(
+                "2. Direct Route to Fish Hotspots 🐟",
+                style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text(
+                "The navigation map routes you straight to high-density Potential Fishing Zones (PFZs) so you don't waste diesel wandering in empty waters.",
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              SizedBox(height: 12),
+              Text(
+                "3. Net Voyage Profit Predictor 💰",
+                style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text(
+                "Calculates (Estimated Fish Catch Revenue - Fuel Cost = Net Profit), proving how much money you gain before leaving the harbor.",
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Got it!", style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   String getTurnGuidanceText() {
     String prefix = isOnLandOrHarbor ? "Departure from $activePortName: " : "";
     if (selectedRoute == "eco") {
@@ -440,6 +506,11 @@ class _FuelScreenState extends State<FuelScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.info_outline, color: Colors.amberAccent),
+                            tooltip: "How Fuel Optimization Works",
+                            onPressed: showHelpDialog,
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

@@ -16,6 +16,7 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
   final AudioRecorder recorder = AudioRecorder();
 
   bool isRecording = false;
+  bool analyzing = false;
   String status = "Not analyzed";
   int confidence = 0;
   String recommendation = "Record engine sound to analyze engine health.";
@@ -33,7 +34,16 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
         setState(() {
           isRecording = true;
+          analyzing = false;
         });
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Microphone permission required for engine acoustics"),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
       }
     } catch (e) {
       print("Recording error: $e");
@@ -46,6 +56,7 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
       setState(() {
         isRecording = false;
+        analyzing = true;
       });
 
       if (path != null) {
@@ -55,22 +66,52 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
         setState(() {
           status = result["status"] ?? "Healthy";
-          confidence = result["confidence"] ?? 90;
+          confidence = result["confidence"] ?? 92;
           recommendation = result["recommendation"] ?? "Engine operating normally";
+          analyzing = false;
+        });
+      } else {
+        if (!mounted) return;
+        setState(() {
+          analyzing = false;
         });
       }
     } catch (e) {
       print("ERROR: $e");
+      if (!mounted) return;
+      setState(() {
+        analyzing = false;
+      });
     }
+  }
+
+  String getLocalizedStatus(String rawStatus) {
+    if (_langProvider.currentLanguage == "ta") {
+      switch (rawStatus.toLowerCase()) {
+        case "healthy":
+          return "ஆரோக்கியமானது (Healthy)";
+        case "minor issue":
+          return "சிறிய கோளாறு (Minor Issue)";
+        case "warning":
+          return "எச்சரிக்கை (Warning)";
+        case "critical":
+          return "ஆபத்தான நிலைமை (Critical)";
+        default:
+          return "பகுப்பாய்வு செய்யப்பட்டது";
+      }
+    }
+    return rawStatus;
   }
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor = status == "Healthy" || status == "ஆரோக்கியமானது"
+    Color statusColor = status.toLowerCase().contains("healthy")
         ? Colors.greenAccent
-        : status == "Minor Issue" || status == "Warning"
+        : status.toLowerCase().contains("minor") || status.toLowerCase().contains("warning")
             ? Colors.orangeAccent
-            : Colors.redAccent;
+            : status == "Not analyzed"
+                ? Colors.cyanAccent
+                : Colors.redAccent;
 
     return AnimatedBuilder(
       animation: _langProvider,
@@ -127,6 +168,7 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
                         const SizedBox(height: 30),
 
+                        /// MIC RECORDING ANIMATED CIRCLE
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 500),
                           width: 170,
@@ -156,21 +198,31 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
                         const SizedBox(height: 18),
 
-                        Text(
-                          isRecording
-                              ? _langProvider.getText("analyzing")
-                              : status == "Not analyzed"
-                                  ? "Ready For Diagnosis"
-                                  : status,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 19,
-                            fontWeight: FontWeight.bold,
+                        if (analyzing) ...[
+                          const CircularProgressIndicator(color: Colors.cyanAccent),
+                          const SizedBox(height: 10),
+                          Text(
+                            _langProvider.getText("analyzing"),
+                            style: const TextStyle(color: Colors.white70, fontSize: 16),
                           ),
-                        ),
+                        ] else ...[
+                          Text(
+                            isRecording
+                                ? _langProvider.getText("analyzing")
+                                : status == "Not analyzed"
+                                    ? "Ready For Diagnosis"
+                                    : getLocalizedStatus(status),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
 
                         const SizedBox(height: 25),
 
+                        /// RECORD / STOP BUTTON
                         SizedBox(
                           width: double.infinity,
                           height: 60,
@@ -181,13 +233,15 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                             ),
-                            onPressed: () {
-                              if (isRecording) {
-                                stopRecording();
-                              } else {
-                                startRecording();
-                              }
-                            },
+                            onPressed: analyzing
+                                ? null
+                                : () {
+                                    if (isRecording) {
+                                      stopRecording();
+                                    } else {
+                                      startRecording();
+                                    }
+                                  },
                             icon: Icon(
                               isRecording ? Icons.stop : Icons.mic,
                               color: Colors.white,
@@ -207,6 +261,7 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
                         const SizedBox(height: 25),
 
+                        /// STATUS CARD
                         Container(
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
@@ -238,12 +293,10 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
                                     Text(
                                       status == "Not analyzed"
                                           ? (_langProvider.currentLanguage == "ta" ? "பகுப்பாய்வு செய்யப்படவில்லை" : "Not analyzed")
-                                          : status == "Healthy"
-                                              ? _langProvider.getText("healthy")
-                                              : status,
+                                          : getLocalizedStatus(status),
                                       style: TextStyle(
                                         color: statusColor,
-                                        fontSize: 20,
+                                        fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -256,6 +309,7 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
                         const SizedBox(height: 14),
 
+                        /// HEALTH SCORE CARD
                         Container(
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
@@ -301,6 +355,7 @@ class _MarineDoctorScreenState extends State<MarineDoctorScreen> {
 
                         const SizedBox(height: 18),
 
+                        /// AI RECOMMENDATION CARD
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(18),

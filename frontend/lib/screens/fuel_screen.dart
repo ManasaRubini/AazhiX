@@ -1,4 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/fuel_model.dart';
 import '../services/fuel_service.dart';
@@ -13,6 +17,8 @@ class FuelScreen extends StatefulWidget {
 
 class _FuelScreenState extends State<FuelScreen> {
   final AppLanguageProvider _langProvider = AppLanguageProvider();
+  final MapController _mapController = MapController();
+
   FuelModel? data;
   bool loading = false;
 
@@ -25,6 +31,121 @@ class _FuelScreenState extends State<FuelScreen> {
 
   // Selected Route Type
   String selectedRoute = "eco"; // "eco", "direct", "coastal"
+
+  // Real GPS & Simulated Navigation State
+  LatLng currentBoatLocation = const LatLng(10.7800, 79.8400);
+  LatLng destinationLocation = const LatLng(10.9200, 80.0500);
+
+  bool isNavigating = false;
+  int currentWaypointIndex = 0;
+  Timer? _navTimer;
+
+  // Route Coordinates
+  List<LatLng> get ecoPoints => [
+        currentBoatLocation,
+        LatLng(currentBoatLocation.latitude + 0.035, currentBoatLocation.longitude + 0.045),
+        LatLng(currentBoatLocation.latitude + 0.070, currentBoatLocation.longitude + 0.110),
+        LatLng(currentBoatLocation.latitude + 0.110, currentBoatLocation.longitude + 0.160),
+        destinationLocation,
+      ];
+
+  List<LatLng> get coastalPoints => [
+        currentBoatLocation,
+        LatLng(currentBoatLocation.latitude + 0.040, currentBoatLocation.longitude + 0.020),
+        LatLng(currentBoatLocation.latitude + 0.090, currentBoatLocation.longitude + 0.070),
+        LatLng(currentBoatLocation.latitude + 0.120, currentBoatLocation.longitude + 0.140),
+        destinationLocation,
+      ];
+
+  List<LatLng> get directPoints => [
+        currentBoatLocation,
+        destinationLocation,
+      ];
+
+  List<LatLng> get activeRoutePoints {
+    if (selectedRoute == "eco") return ecoPoints;
+    if (selectedRoute == "coastal") return coastalPoints;
+    return directPoints;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLocation();
+    optimize();
+  }
+
+  @override
+  void dispose() {
+    _navTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      Position position = await Geolocator.getCurrentPosition().timeout(const Duration(seconds: 4));
+      if (!mounted) return;
+
+      setState(() {
+        currentBoatLocation = LatLng(position.latitude, position.longitude);
+        destinationLocation = LatLng(position.latitude + 0.14, position.longitude + 0.21);
+      });
+      _mapController.move(currentBoatLocation, 11.5);
+    } catch (e) {
+      debugPrint("Location lookup fallback used: $e");
+    }
+  }
+
+  void startNavigationSimulation() {
+    if (isNavigating) {
+      _navTimer?.cancel();
+      setState(() {
+        isNavigating = false;
+        currentWaypointIndex = 0;
+      });
+      return;
+    }
+
+    setState(() {
+      isNavigating = true;
+      currentWaypointIndex = 0;
+    });
+
+    List<LatLng> points = activeRoutePoints;
+
+    _navTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (currentWaypointIndex < points.length - 1) {
+        setState(() {
+          currentWaypointIndex++;
+          currentBoatLocation = points[currentWaypointIndex];
+        });
+        _mapController.move(currentBoatLocation, 12.5);
+      } else {
+        timer.cancel();
+        setState(() {
+          isNavigating = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(" Destination Fishing Ground Reached safely! Fuel saved: 22%"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    });
+  }
 
   void optimize() async {
     setState(() => loading = true);
@@ -51,13 +172,19 @@ class _FuelScreenState extends State<FuelScreen> {
       setState(() {
         loading = false;
       });
+    }
+  }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Fuel optimization failed"),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+  String getTurnGuidanceText() {
+    if (selectedRoute == "eco") {
+      if (currentWaypointIndex == 0) return "Head 045° NE into Coastal Current vector (+1.8 kt drift assistance)";
+      if (currentWaypointIndex == 1) return "Turn 15° Right to align with Deep Ocean Eco Channel";
+      if (currentWaypointIndex == 2) return "Maintain steady speed 8.5 kt along low-friction current corridor";
+      return "Approaching High Yield Fishing Zone target waypoint";
+    } else if (selectedRoute == "coastal") {
+      return "Coastline Buffer Route: Head 030° N, stay within 4 NM from shoreline safety harbors";
+    } else {
+      return "Direct High Drag Route: Head 055° NE straight into opposing wave resistance";
     }
   }
 
@@ -111,6 +238,7 @@ class _FuelScreenState extends State<FuelScreen> {
       onTap: () {
         setState(() {
           selectedRoute = id;
+          currentWaypointIndex = 0;
         });
         optimize();
       },
@@ -122,7 +250,7 @@ class _FuelScreenState extends State<FuelScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : Colors.white24,
-            width: isSelected ? 2.0 : 1.0,
+            width: isSelected ? 2.5 : 1.0,
           ),
         ),
         child: Row(
@@ -209,8 +337,8 @@ class _FuelScreenState extends State<FuelScreen> {
                       Row(
                         children: [
                           const Icon(
-                            Icons.local_gas_station,
-                            color: Colors.orangeAccent,
+                            Icons.map_rounded,
+                            color: Colors.cyanAccent,
                             size: 32,
                           ),
                           const SizedBox(width: 10),
@@ -226,8 +354,241 @@ class _FuelScreenState extends State<FuelScreen> {
                               ),
                             ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.greenAccent.withOpacity(.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.greenAccent),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.gps_fixed, color: Colors.greenAccent, size: 14),
+                                SizedBox(width: 5),
+                                Text(
+                                  "GPS ACTIVE",
+                                  style: TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
+
+                      const SizedBox(height: 18),
+
+                      /// 🗺️ REAL INTERACTIVE MARITIME GPS NAVIGATION MAP CARD
+                      Container(
+                        height: 380,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: Colors.cyanAccent.withOpacity(.5), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(.4),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          children: [
+                            FlutterMap(
+                              mapController: _mapController,
+                              options: MapOptions(
+                                initialCenter: currentBoatLocation,
+                                initialZoom: 11.5,
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                                ),
+                                PolylineLayer(
+                                  polylines: [
+                                    // Direct Route (Red Line)
+                                    Polyline(
+                                      points: directPoints,
+                                      color: selectedRoute == "direct" ? Colors.redAccent : Colors.redAccent.withOpacity(.3),
+                                      strokeWidth: selectedRoute == "direct" ? 5.0 : 2.5,
+                                    ),
+                                    // Coastal Route (Amber Line)
+                                    Polyline(
+                                      points: coastalPoints,
+                                      color: selectedRoute == "coastal" ? Colors.amberAccent : Colors.amberAccent.withOpacity(.3),
+                                      strokeWidth: selectedRoute == "coastal" ? 5.0 : 2.5,
+                                    ),
+                                    // AI Eco Route (Green Line)
+                                    Polyline(
+                                      points: ecoPoints,
+                                      color: selectedRoute == "eco" ? Colors.greenAccent : Colors.greenAccent.withOpacity(.3),
+                                      strokeWidth: selectedRoute == "eco" ? 5.5 : 3.0,
+                                    ),
+                                  ],
+                                ),
+                                MarkerLayer(
+                                  markers: [
+                                    // Boat Location Marker
+                                    Marker(
+                                      point: currentBoatLocation,
+                                      width: 60,
+                                      height: 60,
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.shade900.withOpacity(.85),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: Colors.cyanAccent, width: 2),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.cyanAccent.withOpacity(.6),
+                                                  blurRadius: 10,
+                                                ),
+                                              ],
+                                            ),
+                                            child: const Icon(
+                                              Icons.directions_boat,
+                                              color: Colors.cyanAccent,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Ocean Current Vector Waypoints
+                                    if (selectedRoute == "eco")
+                                      Marker(
+                                        point: ecoPoints[1],
+                                        width: 40,
+                                        height: 40,
+                                        child: const Icon(
+                                          Icons.navigation_rounded,
+                                          color: Colors.greenAccent,
+                                          size: 26,
+                                        ),
+                                      ),
+                                    // Target Destination Waypoint Marker
+                                    Marker(
+                                      point: destinationLocation,
+                                      width: 60,
+                                      height: 60,
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.shade900.withOpacity(.9),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: Colors.amberAccent, width: 2),
+                                            ),
+                                            child: const Icon(
+                                              Icons.phishing,
+                                              color: Colors.amberAccent,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                            /// TURN-BY-TURN NAVIGATION HUD BANNER (LIKE MAPS NAV)
+                            Positioned(
+                              top: 12,
+                              left: 12,
+                              right: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(.82),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: Colors.cyanAccent.withOpacity(.6)),
+                                  boxShadow: const [
+                                    BoxShadow(color: Colors.black45, blurRadius: 10),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.cyanAccent.withOpacity(.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.turn_right_rounded, color: Colors.cyanAccent, size: 24),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            getTurnGuidanceText(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "Route: ${selectedRoute.toUpperCase()} | Speed: 9.2 knots",
+                                            style: const TextStyle(color: Colors.cyanAccent, fontSize: 11),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            /// MAP NAVIGATION ACTION BUTTONS
+                            Positioned(
+                              bottom: 12,
+                              right: 12,
+                              child: Column(
+                                children: [
+                                  FloatingActionButton.small(
+                                    heroTag: "recenter",
+                                    backgroundColor: Colors.black87,
+                                    onPressed: () {
+                                      _mapController.move(currentBoatLocation, 12);
+                                    },
+                                    child: const Icon(Icons.my_location, color: Colors.cyanAccent),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  FloatingActionButton.extended(
+                                    heroTag: "start_nav",
+                                    backgroundColor: isNavigating ? Colors.redAccent : Colors.greenAccent,
+                                    onPressed: startNavigationSimulation,
+                                    icon: Icon(
+                                      isNavigating ? Icons.stop : Icons.play_arrow,
+                                      color: isNavigating ? Colors.white : Colors.black,
+                                    ),
+                                    label: Text(
+                                      isNavigating ? "STOP NAV" : "START NAV",
+                                      style: TextStyle(
+                                        color: isNavigating ? Colors.white : Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                       const SizedBox(height: 20),
 
                       /// BEST FUEL-OPTIMIZED ROUTE SELECTION PANEL

@@ -16,30 +16,32 @@ async def marine_doctor(file: UploadFile = File(...)):
 
     try:
         result = analyze_engine(path)
+        status_key = result.get("engine_status", "normal").lower()
+        conf = result.get("confidence", 90)
 
-        if result.get("engine_status") == "normal":
+        if "bearing" in status_key:
             return {
-                "status": "Healthy",
-                "confidence": 92,
-                "recommendation": "Engine operating normally"
+                "status": "Critical",
+                "confidence": conf,
+                "recommendation": "Bearing fault detected! Metallic squeal indicates severe shaft bearing wear. Immediate service required."
             }
-        elif result.get("severity") == "LOW":
-            return {
-                "status": "Minor Issue",
-                "confidence": 85,
-                "recommendation": "Inspect engine components during next maintenance."
-            }
-        elif result.get("severity") == "MEDIUM":
+        elif "misalignment" in status_key:
             return {
                 "status": "Warning",
-                "confidence": 80,
-                "recommendation": "Engine requires attention soon."
+                "confidence": conf,
+                "recommendation": "Propeller shaft misalignment detected. Inspect shaft coupling and belt tension during next port visit."
+            }
+        elif "pump" in status_key or "cavitation" in status_key:
+            return {
+                "status": "Minor Issue",
+                "confidence": conf,
+                "recommendation": "Pump cavitation sputter detected. Clean water intake strainer and inspect impeller."
             }
         else:
             return {
-                "status": "Critical",
-                "confidence": 75,
-                "recommendation": "Stop operation and service the engine immediately."
+                "status": "Healthy",
+                "confidence": conf,
+                "recommendation": "Engine operating normally. Lubrication & pressure levels optimal."
             }
     except Exception as e:
         print("Marine doctor route exception:", e)

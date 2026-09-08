@@ -40,6 +40,17 @@ class _FuelScreenState extends State<FuelScreen> {
   int currentWaypointIndex = 0;
   Timer? _navTimer;
 
+  bool isOnLandOrHarbor = true;
+  String activePortName = "Nagapattinam Fishing Port";
+
+  final List<Map<String, dynamic>> ports = [
+    {"name": "Nagapattinam Port", "pos": const LatLng(10.7600, 79.8500)},
+    {"name": "Chennai Royapuram Port", "pos": const LatLng(13.1200, 80.3000)},
+    {"name": "Rameswaram Jetty Port", "pos": const LatLng(9.2800, 79.3100)},
+    {"name": "Kanyakumari Harbor", "pos": const LatLng(8.0800, 77.5500)},
+    {"name": "Tuticorin Fishing Port", "pos": const LatLng(8.8000, 78.1600)},
+  ];
+
   // Route Coordinates
   List<LatLng> get ecoPoints => [
         currentBoatLocation,
@@ -93,10 +104,38 @@ class _FuelScreenState extends State<FuelScreen> {
       Position position = await Geolocator.getCurrentPosition().timeout(const Duration(seconds: 4));
       if (!mounted) return;
 
-      setState(() {
-        currentBoatLocation = LatLng(position.latitude, position.longitude);
-        destinationLocation = LatLng(position.latitude + 0.14, position.longitude + 0.21);
-      });
+      LatLng userPos = LatLng(position.latitude, position.longitude);
+      // Offshore condition: longitude > 80.05 or latitude < 7.9
+      bool offshore = (userPos.longitude > 80.05 || userPos.latitude < 7.9);
+
+      if (offshore) {
+        setState(() {
+          isOnLandOrHarbor = false;
+          activePortName = "Live Offshore GPS";
+          currentBoatLocation = userPos;
+          destinationLocation = LatLng(userPos.latitude + 0.14, userPos.longitude + 0.21);
+        });
+      } else {
+        // User is currently testing from land / home. Snap departure to nearest coastal fishing port!
+        double minDistance = double.infinity;
+        Map<String, dynamic> nearestPort = ports.first;
+
+        for (var port in ports) {
+          LatLng pPos = port["pos"];
+          double dist = Distance().as(LengthUnit.Kilometer, userPos, pPos);
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestPort = port;
+          }
+        }
+
+        setState(() {
+          isOnLandOrHarbor = true;
+          activePortName = nearestPort["name"];
+          currentBoatLocation = nearestPort["pos"];
+          destinationLocation = LatLng(currentBoatLocation.latitude + 0.14, currentBoatLocation.longitude + 0.20);
+        });
+      }
       _mapController.move(currentBoatLocation, 11.5);
     } catch (e) {
       debugPrint("Location lookup fallback used: $e");
@@ -176,15 +215,16 @@ class _FuelScreenState extends State<FuelScreen> {
   }
 
   String getTurnGuidanceText() {
+    String prefix = isOnLandOrHarbor ? "Departure from $activePortName: " : "";
     if (selectedRoute == "eco") {
-      if (currentWaypointIndex == 0) return "Head 045° NE into Coastal Current vector (+1.8 kt drift assistance)";
+      if (currentWaypointIndex == 0) return "${prefix}Head 045° NE into Coastal Current vector (+1.8 kt drift assistance)";
       if (currentWaypointIndex == 1) return "Turn 15° Right to align with Deep Ocean Eco Channel";
       if (currentWaypointIndex == 2) return "Maintain steady speed 8.5 kt along low-friction current corridor";
       return "Approaching High Yield Fishing Zone target waypoint";
     } else if (selectedRoute == "coastal") {
-      return "Coastline Buffer Route: Head 030° N, stay within 4 NM from shoreline safety harbors";
+      return "${prefix}Coastline Buffer Route: Head 030° N, stay within 4 NM from shoreline safety harbors";
     } else {
-      return "Direct High Drag Route: Head 055° NE straight into opposing wave resistance";
+      return "${prefix}Direct High Drag Route: Head 055° NE straight into opposing wave resistance";
     }
   }
 
@@ -357,17 +397,25 @@ class _FuelScreenState extends State<FuelScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.greenAccent.withOpacity(.2),
+                              color: isOnLandOrHarbor ? Colors.amberAccent.withOpacity(.2) : Colors.greenAccent.withOpacity(.2),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.greenAccent),
+                              border: Border.all(color: isOnLandOrHarbor ? Colors.amberAccent : Colors.greenAccent),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
-                                Icon(Icons.gps_fixed, color: Colors.greenAccent, size: 14),
-                                SizedBox(width: 5),
+                                Icon(
+                                  isOnLandOrHarbor ? Icons.anchor : Icons.gps_fixed,
+                                  color: isOnLandOrHarbor ? Colors.amberAccent : Colors.greenAccent,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 5),
                                 Text(
-                                  "GPS ACTIVE",
-                                  style: TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                                  isOnLandOrHarbor ? "PORT ORIGIN MODE" : "GPS OFFSHORE",
+                                  style: TextStyle(
+                                    color: isOnLandOrHarbor ? Colors.amberAccent : Colors.greenAccent,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),

@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:noise_meter/noise_meter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
 import '../services/sos_service.dart';
@@ -421,6 +422,44 @@ class _SosScreenState extends State<SosScreen> {
                         ),
                       ),
 
+                      const SizedBox(height: 20),
+
+                      /// 📞 FFMA MARITIME EMERGENCY CONTACTS DIRECTORY
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.08),
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(color: Colors.cyanAccent.withOpacity(.4)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.contact_phone, color: Colors.amberAccent, size: 24),
+                                SizedBox(width: 10),
+                                Text(
+                                  "Maritime Helpline Directory",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 15),
+
+                            contactTile("Indian Coast Guard (Toll Free)", "1554", Icons.shield, Colors.redAccent),
+                            contactTile("Coastal Security Police", "1093", Icons.local_police, Colors.orangeAccent),
+                            contactTile("Fisheries Department Helpline", "18004251660", Icons.phishing, Colors.greenAccent),
+                            contactTile("Marine Ambulance Emergency", "108", Icons.medical_services, Colors.cyanAccent),
+                            contactTile("Nagapattinam Harbor Control", "04365222400", Icons.anchor, Colors.amberAccent),
+                          ],
+                        ),
+                      ),
+
                       const SizedBox(height: 30),
                     ],
                   ),
@@ -430,6 +469,40 @@ class _SosScreenState extends State<SosScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget contactTile(String title, String number, IconData icon, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(.2),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        subtitle: Text(
+          "Tel: $number",
+          style: TextStyle(color: color, fontWeight: FontWeight.bold),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.phone_in_talk, color: Colors.greenAccent),
+          onPressed: () async {
+            final uri = Uri.parse("tel:$number");
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri);
+            }
+          },
+        ),
+      ),
     );
   }
 

@@ -8,6 +8,7 @@ import '../models/fuel_model.dart';
 import '../services/fuel_service.dart';
 import '../services/fishzone_service.dart';
 import '../services/app_language_provider.dart';
+import '../services/imbl_service.dart';
 
 class FuelScreen extends StatefulWidget {
   const FuelScreen({super.key});
@@ -68,6 +69,10 @@ class _FuelScreenState extends State<FuelScreen> {
   double get estimatedFuelCost => (data?.cost != null) ? (data!.cost as num).toDouble() : (distance * consumption * 105);
   double get netTripProfit => estimatedRevenue - estimatedFuelCost;
   double get fuelProfitSavings => (distance * consumption * 0.22 * 105);
+
+  double get imblDistance => ImblService.getDistanceToIMBL(currentBoatLocation.latitude, currentBoatLocation.longitude);
+  double get pfzBearing => ImblService.calculateBearing(currentBoatLocation, destinationLocation);
+  double get distanceNM => (distance * 0.539957);
 
   final List<Map<String, dynamic>> ports = [
     {"name": "Nagapattinam Port", "pos": const LatLng(10.7600, 79.8500)},
@@ -613,6 +618,33 @@ class _FuelScreenState extends State<FuelScreen> {
 
                       const SizedBox(height: 18),
 
+                      /// 🚨 IMBL BORDER SAFETY WARNING BANNER (FFMA FEATURE)
+                      if (imblDistance < 8.0)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade900.withOpacity(.9),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: Colors.amberAccent, width: 2),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.redAccent, blurRadius: 10),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.gavel_rounded, color: Colors.amberAccent, size: 28),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "🚨 IMBL BORDER ALERT: Vessel is ${imblDistance.toStringAsFixed(1)} NM from Sri Lanka Boundary! Turn West immediately!",
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
                       /// 🗺️ REAL INTERACTIVE MARITIME GPS NAVIGATION MAP CARD
                       Container(
                         height: 390,
@@ -643,6 +675,12 @@ class _FuelScreenState extends State<FuelScreen> {
                                 ),
                                 PolylineLayer(
                                   polylines: [
+                                    // 🚨 International Maritime Boundary Line (IMBL Border Line)
+                                    Polyline(
+                                      points: ImblService.imblPoints,
+                                      color: Colors.red.shade400,
+                                      strokeWidth: 4.0,
+                                    ),
                                     // Direct Route (Red Line)
                                     Polyline(
                                       points: directPoints,
@@ -803,8 +841,8 @@ class _FuelScreenState extends State<FuelScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            "Target: $selectedSpecies ($catchProbability%) | Net Profit: ₹${netTripProfit.toStringAsFixed(0)}",
-                                            style: const TextStyle(color: Colors.cyanAccent, fontSize: 11),
+                                            "Bearing: ${ImblService.getBearingText(pfzBearing)} | Dist: ${distanceNM.toStringAsFixed(1)} NM | IMBL: ${imblDistance.toStringAsFixed(1)} NM",
+                                            style: const TextStyle(color: Colors.cyanAccent, fontSize: 11, fontWeight: FontWeight.bold),
                                           ),
                                         ],
                                       ),

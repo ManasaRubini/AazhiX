@@ -16,22 +16,28 @@ class _FuelScreenState extends State<FuelScreen> {
   FuelModel? data;
   bool loading = false;
 
-  // Dynamic user inputs (No hardcoded values)
+  // Dynamic user inputs
   double fuelCapacity = 60.0;
   double currentFuel = 40.0;
   double distance = 30.0;
   double consumption = 1.2;
   String seaCondition = "medium";
 
+  // Selected Route Type
+  String selectedRoute = "eco"; // "eco", "direct", "coastal"
+
   void optimize() async {
     setState(() => loading = true);
 
     try {
+      double routeFactor = selectedRoute == "eco" ? 0.85 : (selectedRoute == "direct" ? 1.15 : 1.0);
+      double effectiveDistance = distance * routeFactor;
+
       final result = await FuelService().optimizeFuel(
         fuelCapacity: fuelCapacity,
         currentFuel: currentFuel,
         consumption: consumption,
-        distance: distance,
+        distance: effectiveDistance,
         seaCondition: seaCondition,
       );
 
@@ -92,8 +98,86 @@ class _FuelScreenState extends State<FuelScreen> {
     );
   }
 
+  Widget routeOptionCard({
+    required String id,
+    required String title,
+    required String subtitle,
+    required String fuelDelta,
+    required IconData icon,
+    required Color color,
+  }) {
+    bool isSelected = selectedRoute == id;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedRoute = id;
+        });
+        optimize();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(.20) : Colors.white.withOpacity(.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? color : Colors.white24,
+            width: isSelected ? 2.0 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withOpacity(.2),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.white70,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: color.withOpacity(.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                fuelDelta,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    double fuelSavedLiters = (distance * consumption * 0.22);
+    double costSavedRupees = fuelSavedLiters * 105;
+
     return AnimatedBuilder(
       animation: _langProvider,
       builder: (context, child) {
@@ -144,6 +228,120 @@ class _FuelScreenState extends State<FuelScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 20),
+
+                      /// BEST FUEL-OPTIMIZED ROUTE SELECTION PANEL
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.10),
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(color: Colors.cyanAccent.withOpacity(.4)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.navigation, color: Colors.cyanAccent, size: 24),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _langProvider.getText("route_opt_title"),
+                                    style: const TextStyle(
+                                      color: Colors.cyanAccent,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 15),
+
+                            routeOptionCard(
+                              id: "eco",
+                              title: _langProvider.getText("eco_route"),
+                              subtitle: "Follows ocean currents • Reduces wave drag",
+                              fuelDelta: "-22% Fuel",
+                              icon: Icons.eco,
+                              color: Colors.greenAccent,
+                            ),
+                            routeOptionCard(
+                              id: "coastal",
+                              title: _langProvider.getText("coastal_route"),
+                              subtitle: "Stays near coastal ports • Moderate burn",
+                              fuelDelta: "Standard",
+                              icon: Icons.shield,
+                              color: Colors.amberAccent,
+                            ),
+                            routeOptionCard(
+                              id: "direct",
+                              title: _langProvider.getText("direct_route"),
+                              subtitle: "High wave resistance • Fast straight path",
+                              fuelDelta: "+15% Fuel",
+                              icon: Icons.speed,
+                              color: Colors.redAccent,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// SAVINGS HIGHLIGHT CARD (WHEN ECO ROUTE SELECTED)
+                      if (selectedRoute == "eco")
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.green.shade800.withOpacity(.6), Colors.teal.shade900.withOpacity(.6)],
+                            ),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: Colors.greenAccent),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Column(
+                                children: [
+                                  Text(
+                                    _langProvider.getText("fuel_saved"),
+                                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "-${fuelSavedLiters.toStringAsFixed(1)} L",
+                                    style: const TextStyle(
+                                      color: Colors.greenAccent,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(height: 40, width: 1, color: Colors.white24),
+                              Column(
+                                children: [
+                                  Text(
+                                    _langProvider.getText("cost_saved"),
+                                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "₹${costSavedRupees.toStringAsFixed(0)}",
+                                    style: const TextStyle(
+                                      color: Colors.amberAccent,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
                       const SizedBox(height: 20),
 
                       /// DYNAMIC INPUT CONTROL PANEL
@@ -274,7 +472,7 @@ class _FuelScreenState extends State<FuelScreen> {
                                 onPressed: optimize,
                                 icon: const Icon(Icons.auto_graph, color: Colors.white),
                                 label: Text(
-                                  _langProvider.getText("calculate_fuel"),
+                                  _langProvider.getText("calc_fuel"),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 17,
